@@ -117,26 +117,26 @@ class OnnxClip:
                 passing them to the model. The embeddings are then concatenated
                 back together before being returned. This is necessary when
                 passing large amounts of data (perhaps ~100 or more).
-            silent_download: If True, the function won't show a warning in
-                case when the models need to be downloaded from the S3 bucket.
+            
         """ 
         self.embedding_size = 512
-        self.image_model, self.text_model = self._load_models(model, silent_download)
+        self._model_urls = {'clip_image_model_vitb32.onnx': 'https://drive.google.com/file/d/1WbRBDaBLsVdAZRD_1deq0uYGhIVFNoAi/view?usp=drive_link',
+                            'clip_text_model_vitb32.onnx': 'https://drive.google.com/file/d/1EC2ju-gIlLfBJ3un-1G5QFQzYi8DoA9o/view?usp=drive_link'}
+
+        self.image_model, self.text_model = self._load_models(model)
         self._tokenizer = Tokenizer()
         self._preprocessor = Preprocessor()
         self._batch_size = batch_size
-        self.model_urls = {'clip_image_model_vitb32.onnx': 'https://drive.google.com/file/d/1WbRBDaBLsVdAZRD_1deq0uYGhIVFNoAi/view?usp=drive_link',
-                            'clip_text_model_vitb32.onnx': 'https://drive.google.com/file/d/1EC2ju-gIlLfBJ3un-1G5QFQzYi8DoA9o/view?usp=drive_link'}
+       
     
     @property
     def EMBEDDING_SIZE(self):
-        raise RuntimeError("OnnxModel.EMBEDDING_SIZE is no longer supported, please use the instance attribute: onnx_model.embedding_size")
+        raise RuntimeError("OnnxModel.EMBEDDING_SIZE is no longer supported,f please use the instance attribute: onnx_model.embedding_size")
 
 
-    @staticmethod
     def _load_models(
+        self,
         model: str,
-        silent: bool,
     ) -> Tuple[ort.InferenceSession, ort.InferenceSession]:
       
   
@@ -149,12 +149,11 @@ class OnnxClip:
 
         for model_file in [IMAGE_MODEL_FILE, TEXT_MODEL_FILE]:
             path = os.path.join(base_dir, "data", model_file)
-            models.append(OnnxClip._load_model(path, silent))
+            models.append(self._load_model(path))
 
         return models[0], models[1]
 
-    @staticmethod
-    def _load_model(path: str, silent: bool):
+    def _load_model(self, path: str):
         try:
             if os.path.exists(path):
                 # `providers` need to be set explicitly since ORT 1.9
@@ -167,9 +166,9 @@ class OnnxClip:
                     os.strerror(errno.ENOENT),
                     path,
                 )
-        except Exception:
+        except FileNotFoundError:
 
-            gdown.download(url=self.model_urls[os.path.basename(path)], 
+            gdown.download(url=self._model_urls[os.path.basename(path)], 
                             output=path, 
                             fuzzy=True
                             )
