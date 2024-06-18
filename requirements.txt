@@ -1,0 +1,7 @@
+onnxruntime-gpu==1.18.0
+pillow==10.3.0
+gdown==5.2.0
+numpy==2.0.0
+opencv-python-headless==4.10.0.84
+ftfy==6.2.0
+regex==2024.5.15
