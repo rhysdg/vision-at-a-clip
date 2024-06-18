@@ -44,6 +44,11 @@ class OnnxSAM:
                 )
         except FileNotFoundError:
 
+            data = f'{self.base_dir}/data'
+            if not os.path.isdir(data):
+                os.makedirs(data)
+
+
             gdown.download(url=self._model_urls[os.path.basename(path)], 
                             output=path, 
                             fuzzy=True
@@ -58,8 +63,8 @@ class OnnxSAM:
     def __setup(self, encoder_model_path, decoder_model_path):
 
         providers = onnxruntime.get_available_providers()
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        parse_path = lambda x: os.path.join(base_dir, "data", x)
+        self.base_dir = os.path.dirname(os.path.abspath(__file__))
+        parse_path = lambda x: os.path.join(self.base_dir, "data", x)
 
         if providers:
             logging.info(
