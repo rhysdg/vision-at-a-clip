@@ -60,39 +60,38 @@ def cosine_similarity(
     return embeddings_1 @ embeddings_2.T
 
 
-def get_similarity_scores(
-    embeddings_1: np.ndarray, embeddings_2: np.ndarray
-) -> np.ndarray:
+def get_similarity_scores(image_embedding: list,
+                           queries: dict):
     """Compute pairwise similarity scores between two arrays of embeddings.
 
-    For zero-shot classification, these can be used as logits. To do so, call
-    `get_similarity_scores(image_embeddings, text_embeddings)`.
-
-    Args:
-        embeddings_1: An array of embeddings of shape (N, D) or (D,).
-        embeddings_2: An array of embeddings of shape (M, D) or (D,).
-
-    Returns:
-        An array with the pairwise similarity scores. If both inputs are 2-D,
-            the output will be of shape (N, M). If one input is 1-D, the output
-            will be of shape (N,) or (M,). If both inputs are 1-D, the output
-            will be a scalar.
     """
-    if embeddings_1.ndim == 1:
-        # Convert to 2-D array using x[np.newaxis, :]
-        # and remove the extra dimension at the end.
-        return get_similarity_scores(
-            embeddings_1[np.newaxis, :], embeddings_2
-        )[0]
 
-    if embeddings_2.ndim == 1:
-        # Convert to 2-D array using x[np.newaxis, :]
-        # and remove the extra dimension at the end.
-        return get_similarity_scores(
-            embeddings_1, embeddings_2[np.newaxis, :]
-        )[:, 0]
+    res_dict = {}
 
-    return cosine_similarity(embeddings_1, embeddings_2) * 100
+    for key, query in queries.items():
+      if not isinstance(query, (np.ndarray, np.generic) ):
+        continue
+
+      if image_embedding.ndim == 1:
+          # Convert to 2-D array using x[np.newaxis, :]
+          # and remove the extra dimension at the end.
+          res_dict[key] = softmax(get_similarity_scores(
+              image_embedding[np.newaxis, :], query
+          )[0])
+
+      if query.ndim == 1:
+          # Convert to 2-D array using x[np.newaxis, :]
+          # and remove the extra dimension at the end.
+          res_dict[key] = softmax(get_similarity_scores(
+              image_embedding, query[np.newaxis, :]
+          )[:, 0])
+
+      res_dict[key] = softmax(cosine_similarity(image_embedding, query) * 100)
+
+
+    return res_dict
+
+
 
 
 class OnnxClip:
@@ -106,7 +105,7 @@ class OnnxClip:
 
 
     def __init__(
-        self, model: str = "ViT-B/32", batch_size: Optional[int] = None, silent_download: bool = False
+        self, model: str = "ViT-B/32", batch_size: Optional[int] = None
     ):
         """
         Instantiates the model and required encoding classes.
@@ -170,7 +169,10 @@ class OnnxClip:
                 )
         except Exception:
 
-            gdown.download(url=self.model_urls[os.path.basename(path)], output=path, fuzzy=True)
+            gdown.download(url=self.model_urls[os.path.basename(path)], 
+                            output=path, 
+                            fuzzy=True
+                            )
         
             # `providers` need to be set explicitly since ORT 1.9
             return ort.InferenceSession(
