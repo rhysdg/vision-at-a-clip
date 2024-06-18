@@ -1,3 +1,4 @@
+
 import errno
 import os
 import logging
@@ -10,6 +11,8 @@ import onnxruntime as ort
 from PIL import Image
 
 from clip import Preprocessor, Tokenizer
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 def softmax(x: np.ndarray) -> np.ndarray:
@@ -119,6 +122,15 @@ class OnnxClip:
                 passing large amounts of data (perhaps ~100 or more).
             
         """ 
+
+        providers = ort.get_available_providers()
+
+        if providers:
+            logging.info(
+                "Available providers for ONNXRuntime: %s", ", ".join(providers)
+            )
+ 
+
         self.embedding_size = 512
         self._model_urls = {'clip_image_model_vitb32.onnx': 'https://drive.google.com/file/d/1WbRBDaBLsVdAZRD_1deq0uYGhIVFNoAi/view?usp=drive_link',
                             'clip_text_model_vitb32.onnx': 'https://drive.google.com/file/d/1EC2ju-gIlLfBJ3un-1G5QFQzYi8DoA9o/view?usp=drive_link'}
