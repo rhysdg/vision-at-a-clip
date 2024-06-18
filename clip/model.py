@@ -9,7 +9,7 @@ import numpy as np
 import onnxruntime as ort
 from PIL import Image
 
-from onnx_clip import Preprocessor, Tokenizer
+from clip import Preprocessor, Tokenizer
 
 
 def softmax(x: np.ndarray) -> np.ndarray:
