@@ -5,7 +5,7 @@
 
 <!-- PROJECT LOGO -->
 <br />
-  <h3 align="center"> SAM at a CLIP: Low latency prompted segmentations</h2>
+  <h3 align="center"> SAM at a CLIP</h2>
   <p align="center">
      Low-latency image segmentation with contrastive language-image pre-training<br />
     <a href="https://github.com/rhysdg/CLIP-SAM-ONNX/wiki"<strong>Explore the docs »</strong></a>
