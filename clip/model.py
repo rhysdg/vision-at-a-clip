@@ -323,7 +323,7 @@ class OnnxClip:
 
         # using default prompt templates for ImageNet
         if prompt_templates == None:
-            prompt_template = ensemble_prompt
+            prompt_templates = ensemble_prompt
         text_features = []
         for t in texts:
             prompted_t = [template.format(t) for template in prompt_templates]
