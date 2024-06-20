@@ -122,7 +122,7 @@ class Tokenizer(object):
         else:
             device='cuda'
     
-        self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384", device='cuda')
+        self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384", device=device)
 
 
     def bpe(self, token: str) -> str:
