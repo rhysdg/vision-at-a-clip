@@ -174,6 +174,7 @@ for k,v in contexts.items():
 ## Future updates
 
 - CLIP/SigLIP attention transfomred to multi point SAM inference - **in progress**
+- Example Gradio app - **in progress**
 - Python packaging - **scheduled**
 - TensorRT - **pending**
 - SlimSAM - *pending**
