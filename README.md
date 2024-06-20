@@ -129,10 +129,10 @@ for k,v in contexts.items():
 
 ### Notebooks
 
-1. Coming soon
+1. [SigLIP Onnx](notebooks/siglip_onnx.ipynb) - A simple railed overview of the usage above - noting that the Huggingface AutoTokenizer is pretty verbose and cost heavy, work is underway to bring a numpy only solution in shorlty
 
 ### Tools and Scripts
-1. **coming soon**
+1. **Coming soon**
 
 
 ### Testing
