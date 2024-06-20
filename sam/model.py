@@ -130,56 +130,34 @@ class OnnxSAM:
     def run_decoder(
         self, image_embedding, original_size, transform_matrix, prompt
     ):
-        if prompt is not None:
-            """Run decoder"""
-            input_points, input_labels = self.get_input_points(prompt)
+        """Run decoder"""
+        input_points, input_labels = self.get_input_points(prompt)
 
-            print(input_points, print(input_labels))
+        # Add a batch index, concatenate a padding point, and transform.
+        onnx_coord = np.concatenate(
+            [input_points, np.array([[0.0, 0.0]])], axis=0
+        )[None, :, :]
+        onnx_label = np.concatenate([input_labels, np.array([-1])], axis=0)[
+            None, :
+        ].astype(np.float32)
+        onnx_coord = self.apply_coords(
+            onnx_coord, self.input_size, self.target_size
+        ).astype(np.float32)
 
-            # Add a batch index, concatenate a padding point, and transform.
-            onnx_coord = np.concatenate(
-                [input_points, np.array([[0.0, 0.0]])], axis=0
-            )[None, :, :]
-            onnx_label = np.concatenate([input_labels, np.array([-1])], axis=0)[
-                None, :
-            ].astype(np.float32)
-            onnx_coord = self.apply_coords(
-                onnx_coord, self.input_size, self.target_size
-            ).astype(np.float32)
+        # Apply the transformation matrix to the coordinates.
+        onnx_coord = np.concatenate(
+            [
+                onnx_coord,
+                np.ones((1, onnx_coord.shape[1], 1), dtype=np.float32),
+            ],
+            axis=2,
+        )
+        onnx_coord = np.matmul(onnx_coord, transform_matrix.T)
+        onnx_coord = onnx_coord[:, :, :2].astype(np.float32)
 
-            # Apply the transformation matrix to the coordinates.
-            onnx_coord = np.concatenate(
-                [
-                    onnx_coord,
-                    np.ones((1, onnx_coord.shape[1], 1), dtype=np.float32),
-                ],
-                axis=2,
-            )
-            onnx_coord = np.matmul(onnx_coord, transform_matrix.T)
-            onnx_coord = onnx_coord[:, :, :2].astype(np.float32)
-
-            # Create an empty mask input and an indicator for no mask.
-            onnx_mask_input = np.zeros((1, 1, 256, 256), dtype=np.float32)
-            onnx_has_mask_input = np.zeros(1, dtype=np.float32)
-
-        else:
-            input_box = np.array([155, 246, 241, 297, 279, 110, 444, 287]).reshape(4,2)
-            # Labels defined as for points, that belong to the objects (not as box points)
-            input_labels = np.array([1,1,1,1])
-
-            onnx_coord = input_box[None, :, :]
-            onnx_label = input_labels[None, :].astype(np.float32)
-
-            coords = deepcopy(onnx_coord).astype(float)
-            coords[..., 0] = coords[..., 0] * (resized_width / orig_width)
-            coords[..., 1] = coords[..., 1] * (resized_height / orig_height)
-
-            onnx_coord = coords.astype("float32")
-
-            # RUN DECODER TO GET MASK
-            onnx_mask_input = np.zeros((1, 1, 256, 256), dtype=np.float32)
-            onnx_has_mask_input = np.zeros(1, dtype=np.float32)
-
+        # Create an empty mask input and an indicator for no mask.
+        onnx_mask_input = np.zeros((1, 1, 256, 256), dtype=np.float32)
+        onnx_has_mask_input = np.zeros(1, dtype=np.float32)
 
         decoder_inputs = {
             "image_embeddings": image_embedding,
@@ -197,9 +175,9 @@ class OnnxSAM:
             masks, original_size, inv_transform_matrix
         )
 
-        
-
         return transformed_masks
+
+
 
     def transform_masks(self, masks, original_size, transform_matrix):
         """Transform masks
