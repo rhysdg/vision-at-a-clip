@@ -5,9 +5,10 @@
 
 <!-- PROJECT LOGO -->
 <br />
-  <h3 align="center"> SAM at a CLIP</h2>
+  <h3 align="center"> SAM at a CLIP: Multimodal Vision at Speed</h2>
   <p align="center">
-     Low-latency image segmentation with contrastive language-image pre-training<br />
+     Low-latency image segmentation with contrastive language-image pre-training
+     <br />
     <a href="https://github.com/rhysdg/CLIP-SAM-ONNX/wiki"<strong>Explore the docs »</strong></a>
     <br />
     <br />
@@ -43,7 +44,7 @@
 
 ### The Story So Far
 
-So what's? There have been a lot of developments in the last year or so with deployable foundational model - keeping up is difficult so the idea is to have a one-stop shop for a few things:
+So what's going on here? There have been a lot of developments in the last year or so with deployable foundational model - keeping up is difficult so the idea is to have a one-stop shop for a few things:
 
 A concerted class - and eventually a Python package - allowing for the deployment of an ONNX accelarated representation of CLIP and it's latest improved variants - like SigLIP - in conjunction with SAM (Segment Anything) as a multi-modal localisation and labelling tool.
 
@@ -77,6 +78,8 @@ Last of all the aim here is to keep up with the latest optimised foundational mo
   ```
 
 - Notice also cosine similrity at `get_similarity_scores` is adusted to handle multiple context - in other words a handful of text embedding can be sent as 'contexts', and send to the function to be evaluated against a single image or a batch of images.
+
+- Not also that an `OnnxSAM` class is also available with the same instantiation and automatic model download - further examples are on their way along with SigLIP integration
 
 
 
@@ -134,14 +137,27 @@ for k,v in contexts.items():
 
  - Pending
 
+### Models & Latency benchmarks
 
-### Models
+**All downloadable model are in `.onnx` format - noting that these are automatically secured with `OnnxClip` and `OnnxSAM` too
 
-**coming soon**
+|model| CLIP Score | Deployment |speed(ms) |TensorRT FP16 status|ms (FP16)| FPS (quantized)| 
+| ------- | --- | --- | ---| --- |--- |---|
+| SigLIP 384 FP16 - [text](https://drive.google.com/file/d/1oUl6H3Y0Az8F1GGXVmEPPcy52dasWeiD/view?usp=drive_link) | pending |RTX 3080 </br> AGX Xavier  | pending </br>  pending |pending </br> pass| pending </br> pending| pending </br> pending | 
+| SigLIP 384 FP16 - [image](https://drive.google.com/file/d/1vZvBZIDPzax2AfoYwRWO7neo2SxoScEX/view?usp=drive_link) | pending | RTX 3080 </br> AGX Xavier | pending </br>  pending | pending  </br> pass| pending </br> pending | pending </br> pending
+| CLIP vitb32 - [text](https://drive.google.com/file/d/1EC2ju-gIlLfBJ3un-1G5QFQzYi8DoA9o/view?usp=drive_link) | pending | RTX 30800 </br> AGX Xavier | pending </br> pending | pending  </br> pass| pending </br> pending |pending </br> pending| |
+| CLIP vitb32 - [image](https://drive.google.com/file/d/1WbRBDaBLsVdAZRD_1deq0uYGhIVFNoAi/view?usp=drive_link)| pending | RTX 30800 </br> AGX Xavier | pending </br> pending | pending  </br> pass| pending </br> pending |pending </br> pending| |
+| CLIP Surgery vitb32 | pending | RTX 30800 </br> AGX Xavier | pending </br> pending | pending  </br> pass| pending </br> pending |pending </br> pending| |
+| CLIP Surgery vitb32 | pending | RTX 30800 </br> AGX Xavier | pending </br> pending | pending  </br> pass| pending </br> pending |pending </br> pending| |
 
-### Latency benchmarks 
+|model| Score | Deployment |speed(ms) |TensorRT FP16 status|ms (FP16)| FPS (quantized)| 
+| ----------------------- | --- | --- | ---| --- |--- |---|
+| SAM ViT-L ONNX - [encoder](https://drive.google.com/file/d/1cxFVincc2-Yi1WACbC46l9vF4rJoilq5/view?usp=drive_link)  | pending |RTX 3080 </br> AGX Xavier  | pending </br>  pending |pending </br> pass| pending </br> pending| pending </br> pending | 
+| SAM ViT-L ONNX - [decoder](https://drive.google.com/file/d/1xIx_jKftt8P4HEzNyKlm3S2Z-9pPdu9C/view?usp=drive_link)  | pending |RTX 3080 </br> AGX Xavier  | pending </br>  pending |pending </br> pass| pending </br> pending| pending </br> pending | 
 
-**coming soon**
+
+
+
 
 ### Similar projects
 
@@ -157,7 +173,8 @@ for k,v in contexts.items():
 - CLIP/SigLIP attention transfomred to multi point SAM inference - **in progress**
 - Python packaging - **scheduled**
 - TensorRT - **pending**
-- CUDA accelarated SigLIP based vector seacrh with chromadb - **pending**
+- CUDA accelarated SigLIP based vector seacrh with [chromadb](https://www.trychroma.com/) - **pending**
+- [ollama](https://www.ollama.com/) support - **pending**
 
 <!-- Contact -->
 ## Contact
