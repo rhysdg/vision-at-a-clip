@@ -109,8 +109,14 @@ class Tokenizer(object):
         self.decoder = {v: k for k, v in self.encoder.items()}
         self.bpe_ranks = dict(zip(merges, range(len(merges))))
         self.cache = {
-            "<|startoftext|>": "<|startoftext|>"device correction'
-        
+            "<|startoftext|>": "<|startoftext|>",
+            "<|endoftext|>": "<|endoftext|>",
+        }
+        self.pat = re.compile(
+            r"""<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+""",
+            re.IGNORECASE,
+        )
+
     
         self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384", device=device)
 
