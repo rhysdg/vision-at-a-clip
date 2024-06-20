@@ -44,13 +44,13 @@
 
 ### The Story So Far
 
-So what's going on here? There have been a lot of developments in the last year or so with deployable foundational model - keeping up is difficult so the idea is to have a one-stop shop for a few things:
+So what's going on here? There have been a lot of developments in the last year or so with deployable foundation model - keeping up is difficult so the idea is to have a one-stop shop for a few things:
 
 A concerted class - and eventually a Python package - allowing for the deployment of an ONNX accelarated representation of CLIP and it's latest improved variants - like SigLIP - in conjunction with SAM (Segment Anything) as a multi-modal localisation and labelling tool.
 
 You'll find that all models and pipelines are available to you as separate tools too - should you wish to classify with SigLIP alone then all good, SAM by itself - no problem 
 
-Last of all the aim here is to keep up with the latest optimised foundational models as we go. Most importantly the aim is to ensure that ONNX and TensorRT representations are available for use. So far we have: 
+Last of all the aim here is to keep up with the latest optimised foundation models as we go. This includes optimised postprocessing and an test time augmentations that can help with inference quality. Most importantly the aim is to ensure that ONNX and TensorRT representations are available for use. So far we have: 
 
 - Open AI's original [CLIP](https://openai.com/index/clip/) - ViT-B/32 basedconverted to ONNX
 - [Siglip](https://arxiv.org/abs/2303.15343) ONNX - FP16 with a quantized variant around the corner, TRT is in our future scope too.
