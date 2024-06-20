@@ -79,6 +79,8 @@ Last of all the aim here is to keep up with the latest optimised foundational mo
 
 - Notice also cosine similrity at `get_similarity_scores` is adusted to handle multiple context - in other words a handful of text embedding can be sent as 'contexts', and send to the function to be evaluated against a single image or a batch of images.
 
+- hidden states are also available at `onnx_model.hidden_image` and `onnx_model.hidden_text` allowing for analysis, attention plotting and multi-point processing as input to SAM. Watch this space for more on this. The stock implementation below uses the second `pooler` output for each in a cosine similarity scenario.
+
 - Not also that an `OnnxSAM` class is also available with the same instantiation and automatic model download - further examples are on their way along with SigLIP integration
 
 
