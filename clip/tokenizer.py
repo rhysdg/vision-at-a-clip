@@ -117,7 +117,13 @@ class Tokenizer(object):
             re.IGNORECASE,
         )
 
-        self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384")
+        if os.environ.get('TEST')==True: 
+            device='cpu'
+        else:
+            device='cuda'
+    
+        self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384", device='cuda')
+
 
     def bpe(self, token: str) -> str:
         if token in self.cache:
