@@ -1,5 +1,6 @@
 
 import errno
+from numpy import linalg as LA
 import os
 import logging
 from pathlib import Path
@@ -10,10 +11,11 @@ import numpy as np
 import onnxruntime as ort
 from PIL import Image
 
+from clip.utils import ensemble_prompt
 from clip import Preprocessor, Tokenizer
 
-logging.basicConfig(level=logging.DEBUG)
 
+logging.basicConfig(level=logging.DEBUG)
 
 def softmax(x: np.ndarray) -> np.ndarray:
     """
@@ -108,7 +110,7 @@ class OnnxClip:
 
 
     def __init__(
-        self, model: str = "ViT-B/32", batch_size: Optional[int] = None
+        self, model: str = "ViT-B/32", batch_size: Optional[int] = None, type='siglip', device='cuda'
     ):
         """
         Instantiates the model and required encoding classes.
@@ -132,14 +134,23 @@ class OnnxClip:
  
 
         self.embedding_size = 512
+
+        assert type in ['siglip', 'clip', 'surgery'], 'please choose either: siglip, clip, or surgery'
+        self.type = type
+
         self._model_urls = {'clip_image_model_vitb32.onnx': 'https://drive.google.com/file/d/1WbRBDaBLsVdAZRD_1deq0uYGhIVFNoAi/view?usp=drive_link',
-                            'clip_text_model_vitb32.onnx': 'https://drive.google.com/file/d/1EC2ju-gIlLfBJ3un-1G5QFQzYi8DoA9o/view?usp=drive_link'}
+                            'clip_text_model_vitb32.onnx': 'https://drive.google.com/file/d/1EC2ju-gIlLfBJ3un-1G5QFQzYi8DoA9o/view?usp=drive_link',
+                            'clip_image_model_surgery_vitb32.onnx': 'https://drive.google.com/file/d/1loyhPLYciY5eCU2Iw5kllNOw1w-PwRO0/view?usp=sharing',
+                            'clip_text_model_surgery_vitb32.onnx': 'https://drive.google.com/file/d/1RBfUlwcvKZJPYzRWEOtATuEfsSOw33Vj/view?usp=sharing',
+                            'siglip_image_384_fp16.onnx': 'https://drive.google.com/file/d/1vZvBZIDPzax2AfoYwRWO7neo2SxoScEX/view?usp=sharing',
+                            'siglip_text_384_fp16.onnx': 'https://drive.google.com/file/d/1oUl6H3Y0Az8F1GGXVmEPPcy52dasWeiD/view?usp=sharing',
+                            }
 
         self.image_model, self.text_model = self._load_models(model)
-        self._tokenizer = Tokenizer()
-        self._preprocessor = Preprocessor()
+        self._tokenizer = Tokenizer(device=device)
+        self._preprocessor = Preprocessor(type=type)
         self._batch_size = batch_size
-       
+     
     
     @property
     def EMBEDDING_SIZE(self):
@@ -151,9 +162,16 @@ class OnnxClip:
         model: str,
     ) -> Tuple[ort.InferenceSession, ort.InferenceSession]:
       
-  
-        IMAGE_MODEL_FILE = "clip_image_model_vitb32.onnx"
-        TEXT_MODEL_FILE = "clip_text_model_vitb32.onnx"
+        if self.type == 'surgery':
+            IMAGE_MODEL_FILE = "clip_image_model_surgery_vitb32.onnx"
+            TEXT_MODEL_FILE = "clip_text_model_surgery_vitb32.onnx"
+        elif self.type == 'siglip':
+            IMAGE_MODEL_FILE = "siglip_image_384_fp16.onnx"
+            TEXT_MODEL_FILE = "siglip_text_384_fp16.onnx"
+        else:
+            IMAGE_MODEL_FILE = "clip_image_model_vitb32.onnx"
+            TEXT_MODEL_FILE = "clip_text_model_vitb32.onnx"
+
        
         base_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -212,12 +230,23 @@ class OnnxClip:
             images = [
                 self._preprocessor.encode_image(image) for image in images
             ]
+
+            
             if not images:
                 return self._get_empty_embedding()
 
             batch = np.concatenate(images)
 
-            return self.image_model.run(None, {"IMAGE": batch})[0]
+            if self.type == 'siglip':
+                incoming = {"pixel_values": batch}
+
+                hidden, pooled = self.image_model.run(None, incoming)
+                self.hidden_image = hidden
+                
+                return pooled
+            else:
+                incoming = {"IMAGE": batch}
+                return self.image_model.run(None, incoming)[0]
 
         else:
             embeddings = []
@@ -250,7 +279,31 @@ class OnnxClip:
             if len(text) == 0:
                 return self._get_empty_embedding()
 
-            return self.text_model.run(None, {"TEXT": text})[0]
+
+          
+            if self.type == 'siglip':
+
+                text = self._tokenizer.encode_text(texts, siglip=True)
+                if len(text) == 0:
+                    return self._get_empty_embedding()
+
+                incoming = {"input_ids": text}
+             
+                hidden, pooled = self.text_model.run(None, incoming)
+                self.hidden_text =  hidden
+
+                return pooled
+
+            else:
+
+                text = self._tokenizer.encode_text(texts)
+                if len(text) == 0:
+                    return self._get_empty_embedding()
+    
+                incoming = {"TEXT": text}
+                return self.text_model.run(None, incoming)[0]
+
+            
         else:
             embeddings = []
             for batch in to_batches(texts, self._batch_size):
@@ -265,6 +318,27 @@ class OnnxClip:
 
     def _get_empty_embedding(self):
         return np.empty((0, self.embedding_size), dtype=np.float32)
+
+    def encode_text_with_prompt_ensemble(self, texts, prompt_templates=None):
+
+        # using default prompt templates for ImageNet
+        if prompt_templates == None:
+            prompt_template = ensemble_prompt
+        text_features = []
+        for t in texts:
+            prompted_t = [template.format(t) for template in prompt_templates]
+            prompted_t  = self._tokenizer.encode_text(prompted_t)
+            class_embeddings = self.text_model.run(None, {"TEXT": prompted_t})[0]
+            class_embeddings /= LA.norm(class_embeddings, axis=-1, keepdims=True)
+            class_embedding = np.mean(class_embeddings, axis=0)
+            class_embedding /= LA.norm(class_embedding)
+            text_features.append(class_embedding)
+
+        text_features = np.stack(text_features, axis=1).T
+
+        return text_features
+
+
 
 
 T = TypeVar("T")

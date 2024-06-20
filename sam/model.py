@@ -177,6 +177,8 @@ class OnnxSAM:
 
         return transformed_masks
 
+
+
     def transform_masks(self, masks, original_size, transform_matrix):
         """Transform masks
         Transform the masks back to the original image size.
@@ -230,7 +232,7 @@ class OnnxSAM:
             "transform_matrix": transform_matrix,
         }
 
-    def predict_masks(self, embedding, prompt):
+    def predict_masks(self, embedding, prompt=None):
         """
         Predict masks for a single image.
         """
