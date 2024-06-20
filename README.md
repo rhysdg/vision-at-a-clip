@@ -87,6 +87,7 @@ Last of all the aim here is to keep up with the latest optimised foundational mo
 
 ## Example usage (CLIP/SigLIP - SAM incoming) :
 ```python
+from sam.model import OnnxSAM
 from clip.model import OnnxClip, softmax, get_similarity_scores
 from PIL import Image
 
