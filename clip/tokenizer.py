@@ -94,7 +94,7 @@ class Tokenizer(object):
     https://github.com/openai/CLIP/blob/main/clip/simple_tokenizer.py#L62
     """
 
-    def __init__(self, bpe_path: str = default_bpe()):
+    def __init__(self, bpe_path: str = default_bpe(), device='cuda'):
         self.byte_encoder = bytes_to_unicode()
         self.byte_decoder = {v: k for k, v in self.byte_encoder.items()}
         merges = gzip.open(bpe_path).read().decode("utf-8").split("\n")
@@ -109,18 +109,8 @@ class Tokenizer(object):
         self.decoder = {v: k for k, v in self.encoder.items()}
         self.bpe_ranks = dict(zip(merges, range(len(merges))))
         self.cache = {
-            "<|startoftext|>": "<|startoftext|>",
-            "<|endoftext|>": "<|endoftext|>",
-        }
-        self.pat = re.compile(
-            r"""<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+""",
-            re.IGNORECASE,
-        )
-
-        if os.environ.get('TEST')==True: 
-            device='cpu'
-        else:
-            device='cuda'
+            "<|startoftext|>": "<|startoftext|>"device correction'
+        
     
         self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384", device=device)
 

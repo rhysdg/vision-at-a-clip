@@ -110,7 +110,7 @@ class OnnxClip:
 
 
     def __init__(
-        self, model: str = "ViT-B/32", batch_size: Optional[int] = None, type='siglip'
+        self, model: str = "ViT-B/32", batch_size: Optional[int] = None, type='siglip', device='cuda'
     ):
         """
         Instantiates the model and required encoding classes.
@@ -147,7 +147,7 @@ class OnnxClip:
                             }
 
         self.image_model, self.text_model = self._load_models(model)
-        self._tokenizer = Tokenizer()
+        self._tokenizer = Tokenizer(device=device)
         self._preprocessor = Preprocessor(type=type)
         self._batch_size = batch_size
      
