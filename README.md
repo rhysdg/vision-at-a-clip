@@ -7,7 +7,7 @@
 <br />
   <h3 align="center"> SAM at a CLIP</h2>
   <p align="center">
-     Low-latency image segmentation with contrastive language-image pre-training<br />
+     Low-latency foundational image segmentation with contrastive language-image pre-training via SigLIP and CLIP<br />
     <a href="https://github.com/rhysdg/CLIP-SAM-ONNX/wiki"<strong>Explore the docs »</strong></a>
     <br />
     <br />
