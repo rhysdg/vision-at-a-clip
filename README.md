@@ -176,7 +176,7 @@ for k,v in contexts.items():
 - CLIP/SigLIP attention transfomred to multi point SAM inference - **in progress**
 - Python packaging - **scheduled**
 - TensorRT - **pending**
-- CUDA accelarated SigLIP based vector seacrh with [chromadb](https://www.trychroma.com/) - **pending**
+- CUDA accelarated SigLIP based vector search with [chromadb](https://www.trychroma.com/) - **pending**
 - [ollama](https://www.ollama.com/) support - **pending**
 
 <!-- Contact -->
