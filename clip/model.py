@@ -290,6 +290,8 @@ class OnnxClip:
                 incoming = {"input_ids": text}
              
                 hidden, pooled = self.text_model.run(None, incoming)
+                
+                #needs adjusting to a list followed by np.concatenate
                 self.hidden_text =  hidden
 
                 return pooled
@@ -306,11 +308,12 @@ class OnnxClip:
             
         else:
             embeddings = []
+         
             for batch in to_batches(texts, self._batch_size):
                 embeddings.append(
                     self.get_text_embeddings(batch, with_batching=False)
                 )
-
+   
             if not embeddings:
                 return self._get_empty_embedding()
 
@@ -319,16 +322,28 @@ class OnnxClip:
     def _get_empty_embedding(self):
         return np.empty((0, self.embedding_size), dtype=np.float32)
 
-    def encode_text_with_prompt_ensemble(self, texts, prompt_templates=None):
+    def encode_text_with_prompt_ensemble(
+        self, 
+        texts, 
+        prompt_templates=None, 
+        siglip=False
+    ):
 
         # using default prompt templates for ImageNet
         if prompt_templates == None:
             prompt_templates = ensemble_prompt
+
         text_features = []
+
         for t in texts:
             prompted_t = [template.format(t) for template in prompt_templates]
-            prompted_t  = self._tokenizer.encode_text(prompted_t)
-            class_embeddings = self.text_model.run(None, {"TEXT": prompted_t})[0]
+            prompted_t  = self._tokenizer.encode_text(prompted_t, siglip=siglip)
+
+            if siglip:
+                class_embeddings = self.text_model.run(None, {"input_ids": prompted_t})[1]
+            else:
+                class_embeddings = self.text_model.run(None, {"TEXT": prompted_t})[0]
+
             class_embeddings /= LA.norm(class_embeddings, axis=-1, keepdims=True)
             class_embedding = np.mean(class_embeddings, axis=0)
             class_embedding /= LA.norm(class_embedding)
@@ -337,8 +352,6 @@ class OnnxClip:
         text_features = np.stack(text_features, axis=1).T
 
         return text_features
-
-
 
 
 T = TypeVar("T")
