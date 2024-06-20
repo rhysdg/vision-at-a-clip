@@ -9,15 +9,15 @@
   <p align="center">
      Low-latency image segmentation with contrastive language-image pre-training
      <br />
-    <a href="https://github.com/rhysdg/CLIP-SAM-ONNX/wiki"<strong>Explore the docs »</strong></a>
+    <a href="https://github.com/rhysdg/sam-at-a-clip/wiki"<strong>Explore the docs »</strong></a>
     <br />
     <br />
     <img src="images/sam_clip.jpg" align="middle" width=200>
     <br />
     <br />
-    <a href="https://github.com/rhysdg/CLIP-SAM-ONNX/issues">Report Bug</a>
+    <a href="https://github.com/rhysdg/sam-at-a-clip/issues">Report Bug</a>
     .
-    <a href="https://github.com/rhysdg/CLIP-SAM-ONNX/issues">Request Feature</a>
+    <a href="https://github.com/rhysdg/sam-at-a-clip/issues">Request Feature</a>
   </p>
 </p>
 
@@ -178,7 +178,7 @@ for k,v in contexts.items():
 
 <!-- Contact -->
 ## Contact
-- Project link: https://github.com/rhysdg/ollama-voice-jetson
+- Project link: https://github.com/rhysdg/sam-at-a-clip
 - Email: [Rhys](rhysdgwilliams@gmail.com)
 
 
