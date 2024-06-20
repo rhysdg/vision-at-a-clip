@@ -5,25 +5,32 @@ import numpy as np
 from PIL import Image
 
 
+
+NORM_MEAN = np.array([0.48145466, 0.4578275, 0.40821073]).reshape(
+    (1, 1, 3)
+)
+NORM_STD = np.array([0.26862954, 0.26130258, 0.27577711]).reshape(
+    (1, 1, 3)
+)
+
+
 class Preprocessor:
-    """
-    Our approach to the CLIP `preprocess` neural net that does not rely on PyTorch.
-    The two approaches fully match.
-    """
 
-    # Fixed variables that ensure the correct output shapes and values for the `Model` class.
-    CLIP_INPUT_SIZE = 224
-    # Normalization constants taken from original CLIP:
-    # https://github.com/openai/CLIP/blob/3702849800aa56e2223035bccd1c6ef91c704ca8/clip/clip.py#L85
-    NORM_MEAN = np.array([0.48145466, 0.4578275, 0.40821073]).reshape(
-        (1, 1, 3)
-    )
-    NORM_STD = np.array([0.26862954, 0.26130258, 0.27577711]).reshape(
-        (1, 1, 3)
-    )
+    def __init__(self, type='siglip'):
+        
+        if type == 'siglip':
+            self.CLIP_INPUT_SIZE = 384
+        else:
+            self.CLIP_INPUT_SIZE = 224
 
-    @staticmethod
-    def _crop_and_resize(img: np.ndarray) -> np.ndarray:
+        self.NORM_MEAN = np.array([0.48145466, 0.4578275, 0.40821073]).reshape(
+            (1, 1, 3)
+        )
+        self.NORM_STD = np.array([0.26862954, 0.26130258, 0.27577711]).reshape(
+            (1, 1, 3)
+        )
+
+    def _crop_and_resize(self, img: np.ndarray) -> np.ndarray:
         """Resize and crop an image to a square, preserving the aspect ratio."""
 
         # Current height and width
@@ -34,7 +41,7 @@ class Preprocessor:
                 f"Height and width of the image should both be non-zero but got shape {h, w}"
             )
 
-        target_size = Preprocessor.CLIP_INPUT_SIZE
+        target_size = self.CLIP_INPUT_SIZE
 
         # Resize so that the smaller dimension matches the required input size.
         # Matches PyTorch:
@@ -179,12 +186,12 @@ class Preprocessor:
         Returns:
             img: numpy image after resizing, center cropping and normalization.
         """
-        img = Preprocessor._image_to_float_array(img)
+        img = self._image_to_float_array(img)
 
-        img = Preprocessor._crop_and_resize(img)
+        img = self._crop_and_resize(img)
 
         # Normalize channels
-        img = (img - Preprocessor.NORM_MEAN) / Preprocessor.NORM_STD
+        img = (img - self.NORM_MEAN) / self.NORM_STD
 
         # Mimic the pytorch tensor format for Model class
         img = np.transpose(img, (2, 0, 1))

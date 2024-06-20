@@ -7,6 +7,7 @@ import ftfy
 import numpy as np
 import regex as re
 
+from transformers import AutoProcessor, AutoModel
 
 def default_bpe():
     """
@@ -116,6 +117,8 @@ class Tokenizer(object):
             re.IGNORECASE,
         )
 
+        self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384")
+
     def bpe(self, token: str) -> str:
         if token in self.cache:
             return self.cache[token]
@@ -181,6 +184,7 @@ class Tokenizer(object):
         texts: Union[str, Iterable[str]],
         context_length: int = 77,
         truncate: bool = False,
+        siglip: bool = False,
     ) -> np.array:
         """
         Taken from CLIP and reformatted to replace pytorch zeros with numpy zeros.
@@ -196,27 +200,35 @@ class Tokenizer(object):
             The context length to use; all CLIP models use 77 as the context length
         truncate: bool
             Whether to truncate the text in case its encoding is longer than the context length
+        siglip: bool
+            Toggle silgip specific preprocessing
         Returns
         -------
         A two-dimensional tensor containing the resulting tokens, shape = [number of input strings, context_length].
         """
-        if isinstance(texts, str):
-            texts = [texts]
 
-        sot_token = self.encoder["<|startoftext|>"]
-        eot_token = self.encoder["<|endoftext|>"]
-        all_tokens = [[sot_token] + self.encode(text) + [eot_token] for text in texts]
-        result = np.zeros((len(all_tokens), context_length), dtype=np.int32)
+        if siglip:
+            result = self.siglip_processor(text=texts, padding="max_length", return_tensors="np")['input_ids'].astype(np.int64)
 
-        for i, tokens in enumerate(all_tokens):
-            if len(tokens) > context_length:
-                if truncate:
-                    tokens = tokens[:context_length]
-                    tokens[-1] = eot_token
-                else:
-                    raise RuntimeError(
-                        f"Input {texts[i]} is too long for context length {context_length}"
-                    )
-            result[i, : len(tokens)] = np.array(tokens)
+        else:
+
+            if isinstance(texts, str):
+                texts = [texts]
+
+            sot_token = self.encoder["<|startoftext|>"]
+            eot_token = self.encoder["<|endoftext|>"]
+            all_tokens = [[sot_token] + self.encode(text) + [eot_token] for text in texts]
+            result = np.zeros((len(all_tokens), context_length), dtype=np.int32)
+
+            for i, tokens in enumerate(all_tokens):
+                if len(tokens) > context_length:
+                    if truncate:
+                        tokens = tokens[:context_length]
+                        tokens[-1] = eot_token
+                    else:
+                        raise RuntimeError(
+                            f"Input {texts[i]} is too long for context length {context_length}"
+                        )
+                result[i, : len(tokens)] = np.array(tokens)
 
         return result

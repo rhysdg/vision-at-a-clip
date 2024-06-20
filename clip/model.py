@@ -1,5 +1,6 @@
 
 import errno
+from numpy import linalg as LA
 import os
 import logging
 from pathlib import Path
@@ -13,7 +14,6 @@ from PIL import Image
 from clip import Preprocessor, Tokenizer
 
 logging.basicConfig(level=logging.DEBUG)
-
 
 def softmax(x: np.ndarray) -> np.ndarray:
     """
@@ -108,7 +108,7 @@ class OnnxClip:
 
 
     def __init__(
-        self, model: str = "ViT-B/32", batch_size: Optional[int] = None
+        self, model: str = "ViT-B/32", batch_size: Optional[int] = None, type='siglip'
     ):
         """
         Instantiates the model and required encoding classes.
@@ -132,14 +132,23 @@ class OnnxClip:
  
 
         self.embedding_size = 512
+
+        assert type in ['siglip', 'clip', 'surgery'], 'please choose either: siglip, clip, or surgery'
+        self.type = type
+
         self._model_urls = {'clip_image_model_vitb32.onnx': 'https://drive.google.com/file/d/1WbRBDaBLsVdAZRD_1deq0uYGhIVFNoAi/view?usp=drive_link',
-                            'clip_text_model_vitb32.onnx': 'https://drive.google.com/file/d/1EC2ju-gIlLfBJ3un-1G5QFQzYi8DoA9o/view?usp=drive_link'}
+                            'clip_text_model_vitb32.onnx': 'https://drive.google.com/file/d/1EC2ju-gIlLfBJ3un-1G5QFQzYi8DoA9o/view?usp=drive_link',
+                            'clip_image_model_surgery_vitb32.onnx': 'https://drive.google.com/file/d/1loyhPLYciY5eCU2Iw5kllNOw1w-PwRO0/view?usp=sharing',
+                            'clip_text_model_surgery_vitb32.onnx': 'https://drive.google.com/file/d/1RBfUlwcvKZJPYzRWEOtATuEfsSOw33Vj/view?usp=sharing',
+                            'siglip_image_384_fp16.onnx': 'https://drive.google.com/file/d/1vZvBZIDPzax2AfoYwRWO7neo2SxoScEX/view?usp=sharing',
+                            'siglip_text_384_fp16.onnx': 'https://drive.google.com/file/d/1oUl6H3Y0Az8F1GGXVmEPPcy52dasWeiD/view?usp=sharing',
+                            }
 
         self.image_model, self.text_model = self._load_models(model)
         self._tokenizer = Tokenizer()
-        self._preprocessor = Preprocessor()
+        self._preprocessor = Preprocessor(type=type)
         self._batch_size = batch_size
-       
+     
     
     @property
     def EMBEDDING_SIZE(self):
@@ -151,9 +160,16 @@ class OnnxClip:
         model: str,
     ) -> Tuple[ort.InferenceSession, ort.InferenceSession]:
       
-  
-        IMAGE_MODEL_FILE = "clip_image_model_vitb32.onnx"
-        TEXT_MODEL_FILE = "clip_text_model_vitb32.onnx"
+        if self.type == 'surgery':
+            IMAGE_MODEL_FILE = "clip_image_model_surgery_vitb32.onnx"
+            TEXT_MODEL_FILE = "clip_text_model_surgery_vitb32.onnx"
+        elif self.type == 'siglip':
+            IMAGE_MODEL_FILE = "siglip_image_384_fp16.onnx"
+            TEXT_MODEL_FILE = "siglip_text_384_fp16.onnx"
+        else:
+            IMAGE_MODEL_FILE = "clip_image_model_vitb32.onnx"
+            TEXT_MODEL_FILE = "clip_text_model_vitb32.onnx"
+
        
         base_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -212,12 +228,23 @@ class OnnxClip:
             images = [
                 self._preprocessor.encode_image(image) for image in images
             ]
+
+            
             if not images:
                 return self._get_empty_embedding()
 
             batch = np.concatenate(images)
 
-            return self.image_model.run(None, {"IMAGE": batch})[0]
+            if self.type == 'siglip':
+                incoming = {"pixel_values": batch}
+
+                hidden, pooled = self.image_model.run(None, incoming)
+                self.hidden_image = hidden
+                
+                return pooled
+            else:
+                incoming = {"IMAGE": batch}
+                return self.image_model.run(None, incoming)[0]
 
         else:
             embeddings = []
@@ -250,7 +277,31 @@ class OnnxClip:
             if len(text) == 0:
                 return self._get_empty_embedding()
 
-            return self.text_model.run(None, {"TEXT": text})[0]
+
+          
+            if self.type == 'siglip':
+
+                text = self._tokenizer.encode_text(texts, siglip=True)
+                if len(text) == 0:
+                    return self._get_empty_embedding()
+
+                incoming = {"input_ids": text}
+             
+                hidden, pooled = self.text_model.run(None, incoming)
+                self.hidden_text =  hidden
+
+                return pooled
+
+            else:
+
+                text = self._tokenizer.encode_text(texts)
+                if len(text) == 0:
+                    return self._get_empty_embedding()
+    
+                incoming = {"TEXT": text}
+                return self.text_model.run(None, incoming)[0]
+
+            
         else:
             embeddings = []
             for batch in to_batches(texts, self._batch_size):
@@ -265,6 +316,109 @@ class OnnxClip:
 
     def _get_empty_embedding(self):
         return np.empty((0, self.embedding_size), dtype=np.float32)
+
+    def encode_text_with_prompt_ensemble(self, texts, prompt_templates=None):
+
+        # using default prompt templates for ImageNet
+        if prompt_templates == None:
+            prompt_templates = ['a bad photo of a {}.', 
+            'a photo of many {}.', 
+            'a sculpture of a {}.', 
+            'a photo of the hard to see {}.', 
+            'a low resolution photo of the {}.', 
+            'a rendering of a {}.', 
+            'graffiti of a {}.', 
+            'a bad photo of the {}.', 
+            'a cropped photo of the {}.', 
+            'a tattoo of a {}.', 
+            'the embroidered {}.', 
+            'a photo of a hard to see {}.', 
+            'a bright photo of a {}.', 
+            'a photo of a clean {}.', 
+            'a photo of a dirty {}.', 
+            'a dark photo of the {}.', 
+            'a drawing of a {}.', 
+            'a photo of my {}.', 
+            'the plastic {}.', 
+            'a photo of the cool {}.', 
+            'a close-up photo of a {}.', 
+            'a black and white photo of the {}.', 
+            'a painting of the {}.', 
+            'a painting of a {}.', 
+            'a pixelated photo of the {}.', 
+            'a sculpture of the {}.', 
+            'a bright photo of the {}.', 
+            'a cropped photo of a {}.', 
+            'a plastic {}.', 
+            'a photo of the dirty {}.', 
+            'a jpeg corrupted photo of a {}.', 
+            'a blurry photo of the {}.', 
+            'a photo of the {}.', 
+            'a good photo of the {}.', 
+            'a rendering of the {}.', 
+            'a {} in a video game.', 
+            'a photo of  }.', 
+            'the {} in a video game.', 
+            'a sketch of a {}.', 
+            'a doodle of the {}.', 
+            'a origami {}.', 
+            'a low resolution photo of a {}.', 
+            'the toy {}.', 
+            'a rendition of the {}.', 
+            'a photo of the clean {}.', 
+            'a photo of a large {}.', 
+            'a rendition of a {}.', 
+            'a photo of a nice {}.', 
+            'a photo of a weird {}.', 
+            'a blurry photo of a {}.', 
+            'a cartoon {}.', 
+            'art of a {}.', 
+            'a sketch of the {}.', 
+            'a embroidered {}.', 
+            'a pixelated photo of a {}.', 
+            'itap of the {}.', 
+            'a jpeg corrupted photo of the {}.', 
+            'a good photo of a {}.', 
+            'a plushie {}.', 
+            'a photo of the nice {}.', 
+            'a photo of the small {}.', 
+            'a photo of the weird {}.', 
+            'the cartoon {}.', 
+            'art of the {}.', 
+            'a drawing of the {}.', 
+            'a photo of the large {}.', 
+            'a black and white photo of a {}.', 
+            'the plushie {}.', 
+            'a dark photo of a {}.', 
+            'itap of a {}.', 
+            'graffiti of the {}.', 
+            'a toy {}.', 
+            'itap of my {}.', 
+            'a photo of a cool {}.', 
+            'a photo of a small {}.', 
+            'a tattoo of the {}.', 
+            'there is a {} in the scene.', 
+            'there is the {} in the scene.', 
+            'this is a {} in the scene.', 
+            'this is the {} in the scene.', 
+            'this is one {} in the scene.'
+            ]
+
+        text_features = []
+        for t in texts:
+            prompted_t = [template.format(t) for template in prompt_templates]
+            prompted_t  = self._tokenizer.encode_text(prompted_t)
+            class_embeddings = self.text_model.run(None, {"TEXT": prompted_t})[0]
+            class_embeddings /= LA.norm(class_embeddings, axis=-1, keepdims=True)
+            class_embedding = np.mean(class_embeddings, axis=0)
+            class_embedding /= LA.norm(class_embedding)
+            text_features.append(class_embedding)
+
+        text_features = np.stack(text_features, axis=1).T
+
+        return text_features
+
+
 
 
 T = TypeVar("T")
@@ -305,3 +459,82 @@ def to_batches(items: Iterable[T], size: int) -> Iterator[List[T]]:
     # The last, potentially incomplete batch
     if batch:
         yield batch
+
+
+
+
+
+def get_similarity_map(sm, shape):
+
+    # min-max norm
+    sm = (sm - sm.min(1, keepdim=True)[0]) / (sm.max(1, keepdim=True)[0] - sm.min(1, keepdim=True)[0])
+
+    # reshape
+    side = int(sm.shape[1] ** 0.5) # square output
+    sm = sm.reshape(sm.shape[0], side, side, -1).permute(0, 3, 1, 2)
+
+    # interpolate
+    sm = torch.nn.functional.interpolate(sm, shape, mode='bilinear')
+    sm = sm.permute(0, 2, 3, 1)
+    
+    return sm
+
+
+def clip_feature_surgery(image_features, text_features, redundant_feats=None, t=2):
+
+    if redundant_feats != None:
+        similarity = image_features @ (text_features - redundant_feats).t()
+
+    else:
+        # weights to restrain influence of obvious classes on others
+        prob = image_features[:, :1, :] @ text_features.t()
+        prob = (prob * 2).softmax(-1)
+        w = prob / prob.mean(-1, keepdim=True)
+
+        # element-wise multiplied features
+        b, n_t, n_i, c = image_features.shape[0], text_features.shape[0], image_features.shape[1], image_features.shape[2]
+        feats = image_features.reshape(b, n_i, 1, c) * text_features.reshape(1, 1, n_t, c)
+        feats *= w.reshape(1, 1, n_t, 1)
+        redundant_feats = feats.mean(2, keepdim=True) # along cls dim
+        feats = feats - redundant_feats
+        
+        # sum the element-wise multiplied features as cosine similarity
+        similarity = feats.sum(-1)
+
+    return similarity
+
+
+# sm shape N_t
+def similarity_map_to_points(sm, shape, t=0.8, down_sample=2):
+    side = int(sm.shape[0] ** 0.5)
+    sm = sm.reshape(1, 1, side, side)
+
+    # down sample to smooth results
+    down_side = side // down_sample
+    sm = torch.nn.functional.interpolate(sm, (down_side, down_side), mode='bilinear')[0, 0, :, :]
+    h, w = sm.shape
+    sm = sm.reshape(-1)
+
+    sm = (sm - sm.min()) / (sm.max() - sm.min())
+    rank = sm.sort(0)[1]
+    scale_h = float(shape[0]) / h
+    scale_w = float(shape[1]) / w
+
+    num = min((sm >= t).sum(), sm.shape[0] // 2)
+    labels = np.ones(num * 2).astype('uint8')
+    labels[num:] = 0
+    points = []
+
+    # positives
+    for idx in rank[-num:]:
+        x = min((idx % w + 0.5) * scale_w, shape[1] - 1) # +0.5 to center
+        y = min((idx // w + 0.5) * scale_h, shape[0] - 1)
+        points.append([int(x.item()), int(y.item())])
+
+    # negatives
+    for idx in rank[:num]:
+        x = min((idx % w + 0.5) * scale_w, shape[1] - 1)
+        y = min((idx // w + 0.5) * scale_h, shape[0] - 1)
+        points.append([int(x.item()), int(y.item())])
+
+    return points, labels

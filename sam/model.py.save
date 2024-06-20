@@ -1,70 +1,27 @@
-import os
-import gdown
-import errno
 import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
 from copy import deepcopy
 
 import cv2
 import numpy as np
 import onnxruntime
-from copy import deepcopy
-
-logging.basicConfig(level=logging.DEBUG)
 
 
-class OnnxSAM:
+class SegmentAnythingONNX:
     """Segmentation model using SegmentAnything"""
 
-    def __init__(self) -> None:
+    def __init__(self, encoder_model_path, decoder_model_path) -> None:
         self.target_size = 1024
         self.input_size = (684, 1024)
 
-
-        #more optioins shortly
-        self._model_urls = {"sam_vit_l_0b3195.encoder.quant.onnx": "https://drive.google.com/file/d/1cxFVincc2-Yi1WACbC46l9vF4rJoilq5/view?usp=drive_link",
-                            "sam_vit_l_0b3195.decoder.quant.onnx": "https://drive.google.com/file/d/1xIx_jKftt8P4HEzNyKlm3S2Z-9pPdu9C/view?usp=drive_link"}
-
-        self.__setup("sam_vit_l_0b3195.encoder.quant.onnx",
-            "sam_vit_l_0b3195.decoder.quant.onnx"
-        )
-
-
-    def __load_model(self, path: str):
-        try:
-            if os.path.exists(path):
-                # `providers` need to be set explicitly since ORT 1.9
-                return onnxruntime.InferenceSession(
-                    path, providers=onnxruntime.get_available_providers()
-                )
-            else:
-                raise FileNotFoundError(
-                    errno.ENOENT,
-                    os.strerror(errno.ENOENT),
-                    path,
-                )
-        except FileNotFoundError:
-
-            data = f'{self.base_dir}/data'
-            if not os.path.isdir(data):
-                os.makedirs(data)
-
-
-            gdown.download(url=self._model_urls[os.path.basename(path)], 
-                            output=path, 
-                            fuzzy=True
-                            )
-        
-            # `providers` need to be set explicitly since ORT 1.9
-            return onnxruntime.InferenceSession(
-                path, providers=onnxruntime.get_available_providers()
-            )
-    
-
-    def __setup(self, encoder_model_path, decoder_model_path):
-
+        # Load models
         providers = onnxruntime.get_available_providers()
-        self.base_dir = os.path.dirname(os.path.abspath(__file__))
-        parse_path = lambda x: os.path.join(self.base_dir, "data", x)
+
+        # Pop TensorRT Runtime due to crashing issues
+        # TODO: Add back when TensorRT backend is stable
+        providers = [p for p in providers if p != "TensorrtExecutionProvider"]
 
         if providers:
             logging.info(
@@ -72,11 +29,13 @@ class OnnxSAM:
             )
         else:
             logging.warning("No available providers for ONNXRuntime")
-
-
-        self.encoder_session = self.__load_model(parse_path(encoder_model_path))
+        self.encoder_session = onnxruntime.InferenceSession(
+            encoder_model_path, providers=providers
+        )
         self.encoder_input_name = self.encoder_session.get_inputs()[0].name
-        self.decoder_session = self.__load_model(parse_path(decoder_model_path))
+        self.decoder_session = onnxruntime.InferenceSession(
+            decoder_model_path, providers=providers
+        )
 
     def get_input_points(self, prompt):
         """Get input points"""
@@ -130,56 +89,34 @@ class OnnxSAM:
     def run_decoder(
         self, image_embedding, original_size, transform_matrix, prompt
     ):
-        if prompt is not None:
-            """Run decoder"""
-            input_points, input_labels = self.get_input_points(prompt)
+        """Run decoder"""
+        input_points, input_labels = self.get_input_points(prompt)
 
-            print(input_points, print(input_labels))
+        # Add a batch index, concatenate a padding point, and transform.
+        onnx_coord = np.concatenate(
+            [input_points, np.array([[0.0, 0.0]])], axis=0
+        )[None, :, :]
+        onnx_label = np.concatenate([input_labels, np.array([-1])], axis=0)[
+            None, :
+        ].astype(np.float32)
+        onnx_coord = self.apply_coords(
+            onnx_coord, self.input_size, self.target_size
+        ).astype(np.float32)
 
-            # Add a batch index, concatenate a padding point, and transform.
-            onnx_coord = np.concatenate(
-                [input_points, np.array([[0.0, 0.0]])], axis=0
-            )[None, :, :]
-            onnx_label = np.concatenate([input_labels, np.array([-1])], axis=0)[
-                None, :
-            ].astype(np.float32)
-            onnx_coord = self.apply_coords(
-                onnx_coord, self.input_size, self.target_size
-            ).astype(np.float32)
+        # Apply the transformation matrix to the coordinates.
+        onnx_coord = np.concatenate(
+            [
+                onnx_coord,
+                np.ones((1, onnx_coord.shape[1], 1), dtype=np.float32),
+            ],
+            axis=2,
+        )
+        onnx_coord = np.matmul(onnx_coord, transform_matrix.T)
+        onnx_coord = onnx_coord[:, :, :2].astype(np.float32)
 
-            # Apply the transformation matrix to the coordinates.
-            onnx_coord = np.concatenate(
-                [
-                    onnx_coord,
-                    np.ones((1, onnx_coord.shape[1], 1), dtype=np.float32),
-                ],
-                axis=2,
-            )
-            onnx_coord = np.matmul(onnx_coord, transform_matrix.T)
-            onnx_coord = onnx_coord[:, :, :2].astype(np.float32)
-
-            # Create an empty mask input and an indicator for no mask.
-            onnx_mask_input = np.zeros((1, 1, 256, 256), dtype=np.float32)
-            onnx_has_mask_input = np.zeros(1, dtype=np.float32)
-
-        else:
-            input_box = np.array([155, 246, 241, 297, 279, 110, 444, 287]).reshape(4,2)
-            # Labels defined as for points, that belong to the objects (not as box points)
-            input_labels = np.array([1,1,1,1])
-
-            onnx_coord = input_box[None, :, :]
-            onnx_label = input_labels[None, :].astype(np.float32)
-
-            coords = deepcopy(onnx_coord).astype(float)
-            coords[..., 0] = coords[..., 0] * (resized_width / orig_width)
-            coords[..., 1] = coords[..., 1] * (resized_height / orig_height)
-
-            onnx_coord = coords.astype("float32")
-
-            # RUN DECODER TO GET MASK
-            onnx_mask_input = np.zeros((1, 1, 256, 256), dtype=np.float32)
-            onnx_has_mask_input = np.zeros(1, dtype=np.float32)
-
+        # Create an empty mask input and an indicator for no mask.
+        onnx_mask_input = np.zeros((1, 1, 256, 256), dtype=np.float32)
+        onnx_has_mask_input = np.zeros(1, dtype=np.float32)
 
         decoder_inputs = {
             "image_embeddings": image_embedding,
@@ -196,8 +133,6 @@ class OnnxSAM:
         transformed_masks = self.transform_masks(
             masks, original_size, inv_transform_matrix
         )
-
-        
 
         return transformed_masks
 
@@ -254,7 +189,7 @@ class OnnxSAM:
             "transform_matrix": transform_matrix,
         }
 
-    def predict_masks(self, embedding, prompt=None):
+    def predict_masks(self, embedding, prompt):
         """
         Predict masks for a single image.
         """
