@@ -74,7 +74,7 @@ Last of all the aim here is to keep up with the latest optimised foundational mo
 - SigLIP is available and recommended by default given the innovation made at with it's loss function leading to better inference. model types however can be changed at instantiation with:
 
   ```python
-  onnx_model = OnnxClip(batch_size=16, type='siglip')
+  onnx_model = OnnxClip(batch_size=16, type='siglip_full')
   ```
 
 - Notice also cosine similrity at `get_similarity_scores` is adusted to handle multiple context - in other words a handful of text embedding can be sent as 'contexts', and send to the function to be evaluated against a single image or a batch of images.
@@ -86,42 +86,63 @@ Last of all the aim here is to keep up with the latest optimised foundational mo
 
 
 ## Example usage (CLIP/SigLIP - SAM incoming) :
-```python
-from sam.model import OnnxSAM
-from clip.model import OnnxClip, softmax, get_similarity_scores
-from PIL import Image
 
-images = [Image.open("clip/data/dog.jpg").convert("RGB")]
+- For cosine similarity based models manual extraction as a precursor can be used as follows (noting that SigLIP text and image encoders arre available despite a different loss):
 
-texts = {"classification": ["a photo of a man", "a photo of a woman", "s photo of a dog"],
-         "situational": ["a dog standing up", "a dog running", "a dog laying on grass"],
-     }
+  ```python
+  from PIL import Image
+  from sam.model import OnnxSAM
+  from clip.model import OnnxClip, softmax, get_similarity_scores
 
 
-onnx_model = OnnxClip(batch_size=16, type='siglip')
+  images = [Image.open("clip/data/dog.jpg").convert("RGB")]
 
-image_embeddings = onnx_model.get_image_embeddings(images)
-text_embeddings_class = onnx_model.get_text_embeddings(texts['classification'])
-text_embeddings_situational = onnx_model.get_text_embeddings(texts['situational'])
-
-
-contexts = {"classification": text_embeddings_class,
-            "situational": text_embeddings_situational,
-           }
-
-logits = get_similarity_scores(image_embeddings, contexts)
-probabilities = softmax(logits['classification'])
+  texts = {"classification": ["a photo of a man", "a photo of a woman", "s photo of a dog"],
+          "situational": ["a dog standing up", "a dog running", "a dog laying on grass"],
+      }
 
 
-for k,v in contexts.items():
-    
-    print(f'\ncontext: {k}\n')
-    probabilities = softmax(logits[k])
-    
-    for text, p in zip(texts[k], probabilities[0]):
-        probabilities = softmax(logits['classification'])
-        print(f"Probability that the image is '{text}': {p:.3f}")
-```
+  onnx_model = OnnxClip(batch_size=16, type='clip')
+
+  image_embeddings = onnx_model.get_image_embeddings(images)
+  text_embeddings_class = onnx_model.get_text_embeddings(texts['classification'])
+  text_embeddings_situational = onnx_model.get_text_embeddings(texts['situational'])
+
+
+  contexts = {"classification": text_embeddings_class,
+              "situational": text_embeddings_situational,
+            }
+
+  probs, logits = get_similarity_scores(image_embeddings, contexts)
+
+  for k,v in contexts.items():
+      print(f'\ncontext: {k}\n')
+      for text, p in zip(texts[k], probs[k][0]):
+          print(f"Probability that the image is '{text}': {p:.3f}")
+  ```
+
+- For the full 384 SigLIP model go ahead and use the `.inference` method as follows. Noting that CLIP is avaiable via the same method. Either model will switch between softmax and sigmoid accordingly:
+
+  ```python
+
+  from PIL import Image
+  from clip.model import OnnxClip, softmax, get_similarity_scores
+
+  images = [Image.open("clip/data/dog.jpg").convert("RGB")]
+
+  texts = {"classification":  ["a photo of space", "a photo of a dog", "a photo of a dog with flowers laying on grass", "a photo of a brown and white dog with blue flowers laying on grass",  "a photo of a brown and white dog with yellow flowers laying on grass"],
+      }
+
+  #type='clip' is also avvaiilable with this usage    
+  onnx_model = OnnxClip(batch_size=16, type='siglip_full')
+  probs, _ = onnx_model.inference(images, texts)
+
+  for k,v in texts.items():
+      print(f'\ncontext: {k}\n')
+      for text, p in zip(texts[k], probs[k]):
+          print(f"Probability that the image is '{text}': {p:.3f}")
+
+  ```
 
 ## Customisation:
 

@@ -102,7 +102,7 @@ def get_similarity_scores(image_embedding: list,
           )[:, 0])
 
       logits_dict[key] = cosine_similarity(image_embedding, query) * 100
-      res_dict[key] = softmax(logits_dict[key])
+      res_dict[key] = softmax(logits_dict[key])[0]
 
 
     return res_dict, logits_dict
@@ -372,7 +372,7 @@ class OnnxClip:
                                         'pixel_values': images})[0]
 
                 logits[k] = res[0]
-                probs[k] = scipy.special.expit(logits[k]) 
+                probs[k] = scipy.special.expit(logits[k])
         
         else:
             
