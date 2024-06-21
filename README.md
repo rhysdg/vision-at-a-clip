@@ -192,7 +192,10 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
 <!-- PROPOSED UPDATES -->
 ## Latest Updates
-- Pending
+- Added a Gradio example app. Ignore the percentages for now - the results of simgoid outputs don't sum to 1 in concert. The results however are pretty impressive! - simply run `python3 app.py` from your root and head to `http://127.0.0.1:7860/` 
+
+
+    ![alt text](images/gradio.png)
 
 <!-- PROPOSED UPDATES -->
 ## Future updates
