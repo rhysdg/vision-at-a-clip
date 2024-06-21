@@ -130,7 +130,11 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
   images = [Image.open("clip/data/dog.jpg").convert("RGB")]
 
-  texts = {"classification":  ["a photo of space", "a photo of a dog", "a photo of a dog with flowers laying on grass", "a photo of a brown and white dog with blue flowers laying on grass",  "a photo of a brown and white dog with yellow flowers laying on grass"],
+  texts = {"classification":  ["a photo of space",
+                              "a photo of a dog",
+                              "a photo of a dog with flowers laying on grass",
+                              "a photo of a brown and white dog with blue flowers laying on grass",
+                              "a photo of a brown and white dog with yellow flowers laying on grass"],
       }
 
   #type='clip' is also avvaiilable with this usage    
