@@ -1,4 +1,5 @@
 
+import scipy
 import errno
 from numpy import linalg as LA
 import os
@@ -16,6 +17,7 @@ from clip import Preprocessor, Tokenizer
 
 
 logging.basicConfig(level=logging.DEBUG)
+T = TypeVar("T")
 
 def softmax(x: np.ndarray) -> np.ndarray:
     """
@@ -42,19 +44,26 @@ def cosine_similarity(
         An array of shape (N, M) with the pairwise cosine similarities.
     """
 
+
+
     for embeddings in [embeddings_1, embeddings_2]:
         if len(embeddings.shape) != 2:
             raise ValueError(
                 f"Expected 2-D arrays but got shape {embeddings.shape}."
             )
 
+
     d1 = embeddings_1.shape[1]
     d2 = embeddings_2.shape[1]
+
+  
+
     if d1 != d2:
         raise ValueError(
             "Expected second dimension of embeddings_1 and embeddings_2 to "
             f"match, but got {d1} and {d2} respectively."
         )
+
 
     def normalize(embeddings):
         return embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
@@ -72,6 +81,7 @@ def get_similarity_scores(image_embedding: list,
     """
 
     res_dict = {}
+    logits_dict = {}
 
     for key, query in queries.items():
       if not isinstance(query, (np.ndarray, np.generic) ):
@@ -91,12 +101,11 @@ def get_similarity_scores(image_embedding: list,
               image_embedding, query[np.newaxis, :]
           )[:, 0])
 
-      res_dict[key] = softmax(cosine_similarity(image_embedding, query) * 100)
+      logits_dict[key] = cosine_similarity(image_embedding, query) * 100
+      res_dict[key] = softmax(logits_dict[key])[0]
 
 
-    return res_dict
-
-
+    return res_dict, logits_dict
 
 
 class OnnxClip:
@@ -135,7 +144,7 @@ class OnnxClip:
 
         self.embedding_size = 512
 
-        assert type in ['siglip', 'clip', 'surgery'], 'please choose either: siglip, clip, or surgery'
+        assert type in ['siglip', 'clip', 'surgery', 'siglip_full'], 'please choose either: siglip, siglip_full, clip, or surgery'
         self.type = type
 
         self._model_urls = {'clip_image_model_vitb32.onnx': 'https://drive.google.com/file/d/1WbRBDaBLsVdAZRD_1deq0uYGhIVFNoAi/view?usp=drive_link',
@@ -144,6 +153,7 @@ class OnnxClip:
                             'clip_text_model_surgery_vitb32.onnx': 'https://drive.google.com/file/d/1RBfUlwcvKZJPYzRWEOtATuEfsSOw33Vj/view?usp=sharing',
                             'siglip_image_384_fp16.onnx': 'https://drive.google.com/file/d/1vZvBZIDPzax2AfoYwRWO7neo2SxoScEX/view?usp=sharing',
                             'siglip_text_384_fp16.onnx': 'https://drive.google.com/file/d/1oUl6H3Y0Az8F1GGXVmEPPcy52dasWeiD/view?usp=sharing',
+                            'siglip_full_384_fp16.onnx': 'https://drive.google.com/file/d/1iGrC4goUs8RdR_lF9SrpQl81pgang-di/view?usp=drive_link',
                             }
 
         self.image_model, self.text_model = self._load_models(model)
@@ -168,17 +178,24 @@ class OnnxClip:
         elif self.type == 'siglip':
             IMAGE_MODEL_FILE = "siglip_image_384_fp16.onnx"
             TEXT_MODEL_FILE = "siglip_text_384_fp16.onnx"
+
+        elif self.type == 'siglip_full':
+            IMAGE_MODEL_FILE = "siglip_full_384_fp16.onnx"
+            TEXT_MODEL_FILE = "+"
+
         else:
             IMAGE_MODEL_FILE = "clip_image_model_vitb32.onnx"
             TEXT_MODEL_FILE = "clip_text_model_vitb32.onnx"
 
-       
+
         base_dir = os.path.dirname(os.path.abspath(__file__))
 
         models = []
 
         for model_file in [IMAGE_MODEL_FILE, TEXT_MODEL_FILE]:
             path = os.path.join(base_dir, "data", model_file)
+            if model_file == "+":
+               return models[0], model_file
             models.append(self._load_model(path))
 
         return models[0], models[1]
@@ -290,6 +307,8 @@ class OnnxClip:
                 incoming = {"input_ids": text}
              
                 hidden, pooled = self.text_model.run(None, incoming)
+                
+                #needs adjusting to a list followed by np.concatenate
                 self.hidden_text =  hidden
 
                 return pooled
@@ -306,11 +325,12 @@ class OnnxClip:
             
         else:
             embeddings = []
+         
             for batch in to_batches(texts, self._batch_size):
                 embeddings.append(
                     self.get_text_embeddings(batch, with_batching=False)
                 )
-
+   
             if not embeddings:
                 return self._get_empty_embedding()
 
@@ -318,30 +338,57 @@ class OnnxClip:
 
     def _get_empty_embedding(self):
         return np.empty((0, self.embedding_size), dtype=np.float32)
+    
+    def inference(self, images, texts):
 
-    def encode_text_with_prompt_ensemble(self, texts, prompt_templates=None):
+        """
+        This could use separation into three models for efficiency
+        ie one time image embedding, multiple text contexts pre-computed
+        and final inference afterwards instead of recomputing image embedding multiple time
+        """
 
-        # using default prompt templates for ImageNet
-        if prompt_templates == None:
-            prompt_templates = ensemble_prompt
-        text_features = []
-        for t in texts:
-            prompted_t = [template.format(t) for template in prompt_templates]
-            prompted_t  = self._tokenizer.encode_text(prompted_t)
-            class_embeddings = self.text_model.run(None, {"TEXT": prompted_t})[0]
-            class_embeddings /= LA.norm(class_embeddings, axis=-1, keepdims=True)
-            class_embedding = np.mean(class_embeddings, axis=0)
-            class_embedding /= LA.norm(class_embedding)
-            text_features.append(class_embedding)
+        probs = {}
+        contexts = {}
+        logits = {}
 
-        text_features = np.stack(text_features, axis=1).T
+        if self.type == 'siglip_full':
 
-        return text_features
+            images = self._preprocessor.siglip_processor(
+                    images=images, 
+                    padding="max_length", 
+                    return_tensors="np"
+                )['pixel_values']
+            
+            for k,v in texts.items():
+                incoming_texts = self._preprocessor.siglip_processor(
+                        text=texts[k], 
+                        padding="max_length", 
+                        return_tensors="np"
+                    )['input_ids']
+            
+            
+                #outputting only image logits right now
+                res = self.image_model.run(None, {'input_ids': incoming_texts,
+                                        'pixel_values': images})[0]
 
+                logits[k] = res[0]
+                probs[k] = scipy.special.expit(logits[k])
+        
+        else:
+            
+            image_embeddings = self.get_image_embeddings(images)
+            for k,v in texts.items():
+                contexts[k] =  self.get_text_embeddings(texts[k])
 
+          
+            probs, logits = get_similarity_scores(image_embeddings, contexts)
 
-
-T = TypeVar("T")
+        
+        return probs, logits
+            
+     
+        
+            
 
 
 def to_batches(items: Iterable[T], size: int) -> Iterator[List[T]]:
@@ -379,3 +426,11 @@ def to_batches(items: Iterable[T], size: int) -> Iterator[List[T]]:
     # The last, potentially incomplete batch
     if batch:
         yield batch
+
+
+
+            
+
+
+
+
