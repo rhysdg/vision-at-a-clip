@@ -87,6 +87,33 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
 ## Example usage (CLIP/SigLIP - SAM incoming) :
 
+- For the full 384 SigLIP model go ahead and use the `.inference` method as follows. Noting that CLIP is avaiable via the same method. Either model will switch between softmax and sigmoid accordingly:
+
+  ```python
+  from PIL import Image
+  from sam.model import OnnxSAM
+  from clip.model import OnnxClip, softmax, get_similarity_scores
+
+  images = [Image.open("clip/data/dog.jpg").convert("RGB")]
+
+  texts = {"classification":  ["a photo of space",
+                              "a photo of a dog",
+                              "a photo of a dog with flowers laying on grass",
+                              "a photo of a brown and white dog with blue flowers laying on grass",
+                              "a photo of a brown and white dog with yellow flowers laying on grass"],
+      }
+
+  #type='clip' is also avvaiilable with this usage    
+  onnx_model = OnnxClip(batch_size=16, type='siglip_full')
+  probs, _ = onnx_model.inference(images, texts)
+
+  for k,v in texts.items():
+      print(f'\ncontext: {k}\n')
+      for text, p in zip(texts[k], probs[k]):
+          print(f"Probability that the image is '{text}': {p:.3f}")
+
+  ```
+
 - For cosine similarity based models manual extraction as a precursor can be used as follows (noting that SigLIP text and image encoders arre available despite a different loss):
 
   ```python
@@ -119,33 +146,6 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
       print(f'\ncontext: {k}\n')
       for text, p in zip(texts[k], probs[k][0]):
           print(f"Probability that the image is '{text}': {p:.3f}")
-  ```
-
-- For the full 384 SigLIP model go ahead and use the `.inference` method as follows. Noting that CLIP is avaiable via the same method. Either model will switch between softmax and sigmoid accordingly:
-
-  ```python
-
-  from PIL import Image
-  from clip.model import OnnxClip, softmax, get_similarity_scores
-
-  images = [Image.open("clip/data/dog.jpg").convert("RGB")]
-
-  texts = {"classification":  ["a photo of space",
-                              "a photo of a dog",
-                              "a photo of a dog with flowers laying on grass",
-                              "a photo of a brown and white dog with blue flowers laying on grass",
-                              "a photo of a brown and white dog with yellow flowers laying on grass"],
-      }
-
-  #type='clip' is also avvaiilable with this usage    
-  onnx_model = OnnxClip(batch_size=16, type='siglip_full')
-  probs, _ = onnx_model.inference(images, texts)
-
-  for k,v in texts.items():
-      print(f'\ncontext: {k}\n')
-      for text, p in zip(texts[k], probs[k]):
-          print(f"Probability that the image is '{text}': {p:.3f}")
-
   ```
 
 ## Customisation:
