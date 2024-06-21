@@ -4,6 +4,8 @@ import cv2 as cv
 import numpy as np
 from PIL import Image
 
+from transformers import AutoProcessor, AutoModel
+
 
 
 NORM_MEAN = np.array([0.48145466, 0.4578275, 0.40821073]).reshape(
@@ -18,7 +20,8 @@ class Preprocessor:
 
     def __init__(self, type='siglip'):
         
-        if type == 'siglip':
+        self.type = type
+        if type in ['siglip', 'siglip_full']:
             self.CLIP_INPUT_SIZE = 384
         else:
             self.CLIP_INPUT_SIZE = 224
@@ -29,6 +32,9 @@ class Preprocessor:
         self.NORM_STD = np.array([0.26862954, 0.26130258, 0.27577711]).reshape(
             (1, 1, 3)
         )
+
+        self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384")
+
 
     def _crop_and_resize(self, img: np.ndarray) -> np.ndarray:
         """Resize and crop an image to a square, preserving the aspect ratio."""
@@ -113,6 +119,7 @@ class Preprocessor:
             # Convert to NumPy
             img = np.array(img)
 
+
         if len(img.shape) > 3:
             raise ValueError(
                 f"The image should have 2 or 3 dimensions but got "
@@ -134,7 +141,7 @@ class Preprocessor:
 
         if np.min(img) < 0:
             raise ValueError(
-                "Images should have non-negative pixel values, "
+                "Imagmodels[1]es should have non-negative pixel values, "
                 f"but the minimum value is {np.min(img)}"
             )
 
@@ -186,16 +193,25 @@ class Preprocessor:
         Returns:
             img: numpy image after resizing, center cropping and normalization.
         """
-        img = self._image_to_float_array(img)
 
-        img = self._crop_and_resize(img)
+        if self.type == 'siglip':
+            img = self.siglip_processor(images=img, 
+                    padding="max_length", 
+                    return_tensors="np"
+                )['pixel_values']
 
-        # Normalize channels
-        img = (img - self.NORM_MEAN) / self.NORM_STD
+        
+        else:
+            img = self._image_to_float_array(img)
 
-        # Mimic the pytorch tensor format for Model class
-        img = np.transpose(img, (2, 0, 1))
-        img = np.expand_dims(img, 0)
-        img = img.astype(np.float32)
+            img = self._crop_and_resize(img)
+
+            # Normalize channels
+            img = (img - self.NORM_MEAN) / self.NORM_STD
+
+            # Mimic the pytorch tensor format for Model class
+            img = np.transpose(img, (2, 0, 1))
+            img = np.expand_dims(img, 0)
+            img = img.astype(np.float32)
 
         return img
