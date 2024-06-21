@@ -23,7 +23,7 @@ def classify(image, text):
     onnx_model = OnnxClip(batch_size=16, type='siglip_full')
     probs, _ = onnx_model.inference(images, texts)
 
-    return {label: float(prob) for label, prob in zip(texts['classification'], probs['classification'])}
+    return {label: "" for label, prob in zip(texts['classification'], probs['classification'])}
 
 
 demo = gr.Interface(
