@@ -199,9 +199,9 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
 <!-- PROPOSED UPDATES -->
 ## Future updates
-
-- CLIP/SigLIP attention transfomred to multi point SAM inference - **in progress**
-- Example Gradio app - **in progress**
+- <strike> Example Gradio app </strike> - **done**
+- Deprecating Huggingface dependency - standalone siglip tokenization for lightweight deployments - **in progress**
+- CLIP/SigLIP attention transformed to multi point SAM inference - **in progress**
 - Python packaging - **scheduled**
 - TensorRT - **pending**
 - SlimSAM - *pending**
