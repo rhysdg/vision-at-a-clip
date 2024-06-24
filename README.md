@@ -5,9 +5,9 @@
 
 <!-- PROJECT LOGO -->
 <br />
-  <h3 align="center"> SAM at a CLIP: Multimodal Vision at Speed</h2>
+  <h3 align="center"> Vision at a CLIP: Multimodal Vision at Speed</h2>
   <p align="center">
-     Low-latency image segmentation and search with contrastive language-image pre-training
+     Low-latency image rationalization and search with contrastive language-image pre-training
      <br />
     <a href="https://github.com/rhysdg/sam-at-a-clip/wiki"<strong>Explore the docs »</strong></a>
     <br />
