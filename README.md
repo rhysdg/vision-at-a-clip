@@ -197,6 +197,9 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
     ![alt text](images/gradio.png)
 
+
+- For variant manual SigLip conversion see tthe following [issue](https://github.com/rhysdg/vision-at-a-clip/issues/6)
+
 <!-- PROPOSED UPDATES -->
 ## Future updates
 - <strike> Example Gradio app </strike> - **done**
