@@ -205,6 +205,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 ## Future updates
 - <strike> Example Gradio app </strike> - **done**
 - Deprecating Huggingface dependency - standalone siglip tokenization for lightweight deployments - **in progress**
+- Grounding Dino ONNX - possibly a better solution than sam here for localisation - prompts arre builtin too
 - CLIP/SigLIP attention transformed to multi point SAM inference - **in progress**
 - Python packaging - **scheduled**
 - TensorRT - **pending**
