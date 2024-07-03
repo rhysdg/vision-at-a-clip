@@ -117,9 +117,6 @@ class Tokenizer(object):
             re.IGNORECASE,
         )
 
-    
-        self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384", device=device)
-
 
     def bpe(self, token: str) -> str:
         if token in self.cache:
@@ -209,28 +206,23 @@ class Tokenizer(object):
         A two-dimensional tensor containing the resulting tokens, shape = [number of input strings, context_length].
         """
 
-        if siglip:
-            result = self.siglip_processor(text=texts, padding="max_length", return_tensors="np")['input_ids'].astype(np.int64)
+        if isinstance(texts, str):
+            texts = [texts]
 
-        else:
+        sot_token = self.encoder["<|startoftext|>"]
+        eot_token = self.encoder["<|endoftext|>"]
+        all_tokens = [[sot_token] + self.encode(text) + [eot_token] for text in texts]
+        result = np.zeros((len(all_tokens), context_length), dtype=np.int32)
 
-            if isinstance(texts, str):
-                texts = [texts]
-
-            sot_token = self.encoder["<|startoftext|>"]
-            eot_token = self.encoder["<|endoftext|>"]
-            all_tokens = [[sot_token] + self.encode(text) + [eot_token] for text in texts]
-            result = np.zeros((len(all_tokens), context_length), dtype=np.int32)
-
-            for i, tokens in enumerate(all_tokens):
-                if len(tokens) > context_length:
-                    if truncate:
-                        tokens = tokens[:context_length]
-                        tokens[-1] = eot_token
-                    else:
-                        raise RuntimeError(
-                            f"Input {texts[i]} is too long for context length {context_length}"
-                        )
-                result[i, : len(tokens)] = np.array(tokens)
+        for i, tokens in enumerate(all_tokens):
+            if len(tokens) > context_length:
+                if truncate:
+                    tokens = tokens[:context_length]
+                    tokens[-1] = eot_token
+                else:
+                    raise RuntimeError(
+                        f"Input {texts[i]} is too long for context length {context_length}"
+                    )
+            result[i, : len(tokens)] = np.array(tokens)
 
         return result

@@ -14,6 +14,7 @@ from PIL import Image
 
 from clip.utils import ensemble_prompt
 from clip import Preprocessor, Tokenizer
+from transformers import AutoProcessor, AutoModel
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -353,6 +354,8 @@ class OnnxClip:
 
         if self.type == 'siglip_full':
 
+            """
+
             images = self._preprocessor.siglip_processor(
                     images=images, 
                     padding="max_length", 
@@ -373,6 +376,95 @@ class OnnxClip:
 
                 logits[k] = res[0]
                 probs[k] = scipy.special.expit(logits[k])
+
+            """
+
+            #outputting only image logits right now
+            #images = self._preprocessor.encode_image(images[0])
+
+            ####image processing needs changing to open clip version
+            self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384")
+            images = self.siglip_processor(
+                    images=images, 
+                    padding="max_length", 
+                    return_tensors="np"
+                )['pixel_values']
+            for k,v in texts.items():
+
+                texts = [self._tokenizer.encode_text(text).astype(np.int64) for text in texts]
+
+                texts = np.array([[  262,   266,  1304,   267,   688,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1],
+       [  262,   266,  1304,   267,   262,   266,   847,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1],
+       [  262,   266,  1304,   267,   262,   266,   847,   268,   262,
+          303,  2595,   266,   332,   288,   264,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1],
+       [  262,   266,  1304,   267,   262,   266,  4728,   847,   268,
+          262,   303,  2595,   266,   332,   288,   264,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1],
+       [  262,   266,  1304,   267,   262,   266,  4728,   847,   268,
+          262,   303,  2595,   266,   332,   288,   264,   275,   790,
+         1236,   263,   262,   266,  4315,  4424,   265,   260,   441,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1],
+       [  262,   266,  1304,   267,   262,   266,  4728,   847,   268,
+          262,   303,  2595,   266,   332,   288,   264,   275,   790,
+         1236,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1],
+       [  262,   266,  1304,   267,   262,   266,  1046,   847,   268,
+          262,   303,  2595,   266,   332,   288,   264,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1],
+       [  262,   266,  1304,   267,   262, 15970,  4059,  2335,   379,
+         3270,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1,     1,     1,     1,     1,     1,     1,     1,     1,
+            1]])
+
+                
+                res = self.image_model.run(None, {'input_ids': texts,
+                                        'pixel_values': images})[0]
+
+                logits[k] = res[0]
+                probs[k] = scipy.special.expit(logits[k])
+
         
         else:
             
