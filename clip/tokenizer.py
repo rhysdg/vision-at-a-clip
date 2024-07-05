@@ -7,7 +7,6 @@ import ftfy
 import numpy as np
 import regex as re
 
-from transformers import AutoProcessor, AutoModel
 
 def default_bpe():
     """
