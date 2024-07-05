@@ -14,8 +14,8 @@ from PIL import Image
 
 from clip.utils import ensemble_prompt
 from clip import Preprocessor, Tokenizer
-from transformers import AutoProcessor, AutoModel
-
+from clip.siglip_tokenizer import SiglipTokenizer
+from clip.siglip_image_processor import image_transform
 
 logging.basicConfig(level=logging.DEBUG)
 T = TypeVar("T")
@@ -120,7 +120,11 @@ class OnnxClip:
 
 
     def __init__(
-        self, model: str = "ViT-B/32", batch_size: Optional[int] = None, type='siglip', device='cuda'
+        self, model: str = "ViT-B/32", 
+        batch_size: Optional[int] = None, 
+        type='siglip', 
+        device='cuda',
+        trt=False
     ):
         """
         Instantiates the model and required encoding classes.
@@ -135,11 +139,17 @@ class OnnxClip:
             
         """ 
 
-        providers = ort.get_available_providers()
+        self.providers = [
+                    'CUDAExecutionProvider',
+                    'CPUExecutionProvider'
+                ]
+        if trt:
+            self.providers.insert(0, 'TensorrtExecutionProvider')
+     
 
-        if providers:
+        if self.providers:
             logging.info(
-                "Available providers for ONNXRuntime: %s", ", ".join(providers)
+                "Available providers for ONNXRuntime: %s", ", ".join(self.providers)
             )
  
 
@@ -158,10 +168,16 @@ class OnnxClip:
                             }
 
         self.image_model, self.text_model = self._load_models(model)
+
         self._tokenizer = Tokenizer(device=device)
+        self._siglip_tokenizer = SiglipTokenizer(vocab_file='/home/rhys/onnx/siglip-base-patch16-384/spiece.model', 
+                model_input_names=["input_ids"]
+                )
+        
+        self._siglip_preprocessor = image_transform(image_size=384, is_train=False)
         self._preprocessor = Preprocessor(type=type)
         self._batch_size = batch_size
-     
+
     
     @property
     def EMBEDDING_SIZE(self):
@@ -202,11 +218,13 @@ class OnnxClip:
         return models[0], models[1]
 
     def _load_model(self, path: str):
+
+
         try:
             if os.path.exists(path):
                 # `providers` need to be set explicitly since ORT 1.9
                 return ort.InferenceSession(
-                    path, providers=ort.get_available_providers()
+                    path, providers=self.providers
                 )
             else:
                 raise FileNotFoundError(
@@ -293,15 +311,15 @@ class OnnxClip:
             An array of embeddings of shape (len(texts), embedding_size).
         """
         if not with_batching or self._batch_size is None:
-            text = self._tokenizer.encode_text(texts)
-            if len(text) == 0:
-                return self._get_empty_embedding()
-
-
+           
           
             if self.type == 'siglip':
 
-                text = self._tokenizer.encode_text(texts, siglip=True)
+                text = self._siglip_tokenizer(incoming, 
+                        return_tensors='np', 
+                        padding="max_length",
+                        truncation=True
+                        )
                 if len(text) == 0:
                     return self._get_empty_embedding()
 
@@ -356,114 +374,31 @@ class OnnxClip:
 
             """
 
-            images = self._preprocessor.siglip_processor(
-                    images=images, 
-                    padding="max_length", 
-                    return_tensors="np"
-                )['pixel_values']
-            
-            for k,v in texts.items():
-                incoming_texts = self._preprocessor.siglip_processor(
-                        text=texts[k], 
-                        padding="max_length", 
-                        return_tensors="np"
-                    )['input_ids']
-            
-            
-                #outputting only image logits right now
-                res = self.image_model.run(None, {'input_ids': incoming_texts,
-                                        'pixel_values': images})[0]
-
-                logits[k] = res[0]
-                probs[k] = scipy.special.expit(logits[k])
-
+      
+          
             """
 
             #outputting only image logits right now
             #images = self._preprocessor.encode_image(images[0])
 
             ####image processing needs changing to open clip version
-            self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384")
-            images = self.siglip_processor(
-                    images=images, 
-                    padding="max_length", 
-                    return_tensors="np"
-                )['pixel_values']
+            images = [self._siglip_preprocessor(i).numpy() for i in images]
+
             for k,v in texts.items():
 
-                texts = [self._tokenizer.encode_text(text).astype(np.int64) for text in texts]
-
-                texts = np.array([[  262,   266,  1304,   267,   688,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1],
-       [  262,   266,  1304,   267,   262,   266,   847,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1],
-       [  262,   266,  1304,   267,   262,   266,   847,   268,   262,
-          303,  2595,   266,   332,   288,   264,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1],
-       [  262,   266,  1304,   267,   262,   266,  4728,   847,   268,
-          262,   303,  2595,   266,   332,   288,   264,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1],
-       [  262,   266,  1304,   267,   262,   266,  4728,   847,   268,
-          262,   303,  2595,   266,   332,   288,   264,   275,   790,
-         1236,   263,   262,   266,  4315,  4424,   265,   260,   441,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1],
-       [  262,   266,  1304,   267,   262,   266,  4728,   847,   268,
-          262,   303,  2595,   266,   332,   288,   264,   275,   790,
-         1236,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1],
-       [  262,   266,  1304,   267,   262,   266,  1046,   847,   268,
-          262,   303,  2595,   266,   332,   288,   264,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1],
-       [  262,   266,  1304,   267,   262, 15970,  4059,  2335,   379,
-         3270,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1,     1,     1,     1,     1,     1,     1,     1,     1,
-            1]])
+                for k,v in texts.items():
+                    incoming_texts = self._siglip_tokenizer(
+                            text=texts[k], 
+                            padding="max_length", 
+                            return_tensors="np",
+                            truncation=True
+                            )['input_ids']
 
                 
-                res = self.image_model.run(None, {'input_ids': texts,
-                                        'pixel_values': images})[0]
+                    res = self.image_model.run(None, {'input_ids': incoming_texts,'pixel_values': images})[0]
 
-                logits[k] = res[0]
-                probs[k] = scipy.special.expit(logits[k])
+                    logits[k] = res[0]
+                    probs[k] = scipy.special.expit(logits[k])
 
         
         else:
