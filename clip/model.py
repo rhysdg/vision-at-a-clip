@@ -88,14 +88,14 @@ def get_probabilities(image_embedding: list,
       if image_embedding.ndim == 1:
           # Convert to 2-D array using x[np.newaxis, :]
           # and remove the extra dimension at the end.
-          res_dict[key] = softmax(get_similarity_scores(
+          res_dict[key] = softmax(get_probabilities(
               image_embedding[np.newaxis, :], query
           )[0])
 
       if query.ndim == 1:
           # Convert to 2-D array using x[np.newaxis, :]
           # and remove the extra dimension at the end.
-          res_dict[key] = softmax(get_similarity_scores(
+          res_dict[key] = softmax(get_probabilities(
               image_embedding, query[np.newaxis, :]
           )[:, 0])
 

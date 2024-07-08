@@ -143,7 +143,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
   for k,v in contexts.items():
       print(f'\ncontext: {k}\n')
-      for text, p in zip(texts[k], probs[k][0]):
+      for text, p in zip(texts[k], probs[k]):
           print(f"Probability that the image is '{text}': {p:.3f}")
   ```
 
