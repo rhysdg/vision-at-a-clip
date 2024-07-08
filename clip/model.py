@@ -1,4 +1,3 @@
-
 import scipy
 import errno
 from numpy import linalg as LA
@@ -122,7 +121,8 @@ class OnnxClip:
     def __init__(
         self, model: str = "ViT-B/32", 
         batch_size: Optional[int] = None, 
-        type='siglip', 
+        type='siglip',
+        size=384,
         device='cuda',
         trt=False
     ):
@@ -169,16 +169,23 @@ class OnnxClip:
 
         self.image_model, self.text_model = self._load_models(model)
 
-        self._tokenizer = Tokenizer(device=device)
-        self._siglip_tokenizer = SiglipTokenizer(vocab_file='/home/rhys/onnx/siglip-base-patch16-384/spiece.model', 
-                model_input_names=["input_ids"]
-                )
-        
-        self._siglip_preprocessor = image_transform(image_size=384, is_train=False)
-        self._preprocessor = Preprocessor(type=type)
+        if 'siglip' in type:
+            #currently only supporting 384
+            assert size in [384, 224], 'please choose either a 384, or 224 input size for SigLIP!'
+
+            base_dir = f'{os.path.dirname(os.path.abspath(__file__))}/data/siglip-base-patch16-{size}/spiece.model'
+
+            self._siglip_tokenizer = SiglipTokenizer(vocab_file=base_dir, 
+                    model_input_names=["input_ids"]
+                    )
+            
+            self._siglip_preprocessor = image_transform(image_size=size, is_train=False)
+        else:
+            self._tokenizer = Tokenizer(device=device)
+            self._preprocessor = Preprocessor(type=type)
+
         self._batch_size = batch_size
 
-    
     @property
     def EMBEDDING_SIZE(self):
         raise RuntimeError("OnnxModel.EMBEDDING_SIZE is no longer supported,f please use the instance attribute: onnx_model.embedding_size")
