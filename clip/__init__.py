@@ -1,14 +1,14 @@
 from .preprocessor import Preprocessor
 from .tokenizer import Tokenizer
 from .siglip_tokenizer import SiglipTokenizer
-from .model import OnnxLip, softmax, get_similarity_scores
+from .model import OnnxLip, softmax, get_probabilities
 
 __all__ = [
     "Preprocessor",
     "Tokenizer",
     "OnnxLip",
     "softmax",
-    "get_similarity_scores",
+    "get_probabilities",
 ]
 
 
