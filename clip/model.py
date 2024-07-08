@@ -106,7 +106,7 @@ def get_similarity_scores(image_embedding: list,
     return res_dict, logits_dict
 
 
-class OnnxClip:
+class OnnxLip:
     """
     This class can be utilised to predict the most relevant text snippet, given
     an image, without directly optimizing for the task, similarly to the
