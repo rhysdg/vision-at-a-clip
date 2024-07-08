@@ -4,9 +4,6 @@ import cv2 as cv
 import numpy as np
 from PIL import Image
 
-from transformers import AutoProcessor, AutoModel
-
-
 
 NORM_MEAN = np.array([0.48145466, 0.4578275, 0.40821073]).reshape(
     (1, 1, 3)
@@ -23,6 +20,12 @@ class Preprocessor:
         self.type = type
         if type in ['siglip', 'siglip_full']:
             self.CLIP_INPUT_SIZE = 384
+            self.NORM_MEAN = np.array([0.5, 0.5, 0.5]).reshape(
+            (1, 1, 3)
+            )
+            self.NORM_STD = np.array([0.5, 0.5, 0.5]).reshape(
+                (1, 1, 3)
+            )
         else:
             self.CLIP_INPUT_SIZE = 224
 
@@ -32,8 +35,6 @@ class Preprocessor:
         self.NORM_STD = np.array([0.26862954, 0.26130258, 0.27577711]).reshape(
             (1, 1, 3)
         )
-
-        self.siglip_processor = AutoProcessor.from_pretrained("google/siglip-base-patch16-384")
 
 
     def _crop_and_resize(self, img: np.ndarray) -> np.ndarray:
@@ -194,24 +195,17 @@ class Preprocessor:
             img: numpy image after resizing, center cropping and normalization.
         """
 
-        if self.type == 'siglip':
-            img = self.siglip_processor(images=img, 
-                    padding="max_length", 
-                    return_tensors="np"
-                )['pixel_values']
+        img = self._image_to_float_array(img)
 
-        
-        else:
-            img = self._image_to_float_array(img)
+        img = self._crop_and_resize(img)
 
-            img = self._crop_and_resize(img)
+        # Normalize channels
 
-            # Normalize channels
-            img = (img - self.NORM_MEAN) / self.NORM_STD
+        img = (img - self.NORM_MEAN) / self.NORM_STD
 
-            # Mimic the pytorch tensor format for Model class
-            img = np.transpose(img, (2, 0, 1))
-            img = np.expand_dims(img, 0)
-            img = img.astype(np.float32)
+        # Mimic the pytorch tensor format for Model class
+        img = np.transpose(img, (2, 0, 1))
+        img = np.expand_dims(img, 0)
+        img = img.astype(np.float32)
 
         return img

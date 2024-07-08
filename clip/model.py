@@ -1,4 +1,3 @@
-
 import scipy
 import errno
 from numpy import linalg as LA
@@ -14,7 +13,8 @@ from PIL import Image
 
 from clip.utils import ensemble_prompt
 from clip import Preprocessor, Tokenizer
-
+from clip.siglip_tokenizer import SiglipTokenizer
+from clip.siglip_image_processor import image_transform
 
 logging.basicConfig(level=logging.DEBUG)
 T = TypeVar("T")
@@ -44,14 +44,10 @@ def cosine_similarity(
         An array of shape (N, M) with the pairwise cosine similarities.
     """
 
-
-
-    for embeddings in [embeddings_1, embeddings_2]:
-        if len(embeddings.shape) != 2:
-            raise ValueError(
-                f"Expected 2-D arrays but got shape {embeddings.shape}."
-            )
-
+    if len(embeddings_1.shape) != 2 or len(embeddings_2.shape) != 2:
+        raise ValueError(
+            f"Expected 2-D arrays but got shapes {embeddings_1.shape} and {embeddings_2.shape}."
+        )
 
     d1 = embeddings_1.shape[1]
     d2 = embeddings_2.shape[1]
@@ -74,10 +70,12 @@ def cosine_similarity(
     return embeddings_1 @ embeddings_2.T
 
 
-def get_similarity_scores(image_embedding: list,
+def get_probabilities(image_embedding: list,
                            queries: dict):
     """Compute pairwise similarity scores between two arrays of embeddings.
 
+    args: image_embedding: list of images
+    queries: dictionary of pre-computed text embeddings
     """
 
     res_dict = {}
@@ -108,7 +106,7 @@ def get_similarity_scores(image_embedding: list,
     return res_dict, logits_dict
 
 
-class OnnxClip:
+class OnnxLip:
     """
     This class can be utilised to predict the most relevant text snippet, given
     an image, without directly optimizing for the task, similarly to the
@@ -119,7 +117,12 @@ class OnnxClip:
 
 
     def __init__(
-        self, model: str = "ViT-B/32", batch_size: Optional[int] = None, type='siglip', device='cuda'
+        self, model: str = "ViT-B/32", 
+        batch_size: Optional[int] = None, 
+        type='siglip',
+        size=384,
+        device='cuda',
+        trt=False
     ):
         """
         Instantiates the model and required encoding classes.
@@ -134,11 +137,17 @@ class OnnxClip:
             
         """ 
 
-        providers = ort.get_available_providers()
+        self.providers = [
+                    'CUDAExecutionProvider',
+                    'CPUExecutionProvider'
+                ]
+        if trt:
+            self.providers.insert(0, 'TensorrtExecutionProvider')
+     
 
-        if providers:
+        if self.providers:
             logging.info(
-                "Available providers for ONNXRuntime: %s", ", ".join(providers)
+                "Available providers for ONNXRuntime: %s", ", ".join(self.providers)
             )
  
 
@@ -157,11 +166,24 @@ class OnnxClip:
                             }
 
         self.image_model, self.text_model = self._load_models(model)
-        self._tokenizer = Tokenizer(device=device)
-        self._preprocessor = Preprocessor(type=type)
+
+        if 'siglip' in type:
+            #currently only supporting 384
+            assert size in [384, 224], 'please choose either a 384, or 224 input size for SigLIP!'
+
+            base_dir = f'{os.path.dirname(os.path.abspath(__file__))}/data/siglip-base-patch16-{size}/spiece.model'
+
+            self._siglip_tokenizer = SiglipTokenizer(vocab_file=base_dir, 
+                    model_input_names=["input_ids"]
+                    )
+            
+            self._siglip_preprocessor = image_transform(image_size=size, is_train=False)
+        else:
+            self._tokenizer = Tokenizer(device=device)
+            self._preprocessor = Preprocessor(type=type)
+
         self._batch_size = batch_size
-     
-    
+
     @property
     def EMBEDDING_SIZE(self):
         raise RuntimeError("OnnxModel.EMBEDDING_SIZE is no longer supported,f please use the instance attribute: onnx_model.embedding_size")
@@ -201,11 +223,13 @@ class OnnxClip:
         return models[0], models[1]
 
     def _load_model(self, path: str):
+
+
         try:
             if os.path.exists(path):
                 # `providers` need to be set explicitly since ORT 1.9
                 return ort.InferenceSession(
-                    path, providers=ort.get_available_providers()
+                    path, providers=self.providers
                 )
             else:
                 raise FileNotFoundError(
@@ -292,15 +316,15 @@ class OnnxClip:
             An array of embeddings of shape (len(texts), embedding_size).
         """
         if not with_batching or self._batch_size is None:
-            text = self._tokenizer.encode_text(texts)
-            if len(text) == 0:
-                return self._get_empty_embedding()
-
-
+           
           
             if self.type == 'siglip':
 
-                text = self._tokenizer.encode_text(texts, siglip=True)
+                text = self._siglip_tokenizer(incoming, 
+                        return_tensors='np', 
+                        padding="max_length",
+                        truncation=True
+                        )
                 if len(text) == 0:
                     return self._get_empty_embedding()
 
@@ -353,26 +377,35 @@ class OnnxClip:
 
         if self.type == 'siglip_full':
 
-            images = self._preprocessor.siglip_processor(
-                    images=images, 
-                    padding="max_length", 
-                    return_tensors="np"
-                )['pixel_values']
-            
-            for k,v in texts.items():
-                incoming_texts = self._preprocessor.siglip_processor(
-                        text=texts[k], 
-                        padding="max_length", 
-                        return_tensors="np"
-                    )['input_ids']
-            
-            
-                #outputting only image logits right now
-                res = self.image_model.run(None, {'input_ids': incoming_texts,
-                                        'pixel_values': images})[0]
+            """
 
-                logits[k] = res[0]
-                probs[k] = scipy.special.expit(logits[k])
+      
+          
+            """
+
+            #outputting only image logits right now
+            #images = self._preprocessor.encode_image(images[0])
+
+            ####image processing needs changing to open clip version
+            images = [self._siglip_preprocessor(i).numpy() for i in images]
+
+            for k,v in texts.items():
+
+                for k,v in texts.items():
+                    incoming_texts = self._siglip_tokenizer(
+                            text=texts[k], 
+                            padding="max_length", 
+                            return_tensors="np",
+                            truncation=True
+                            )['input_ids']
+
+                
+                    res = self.image_model.run(None, {'input_ids': incoming_texts,'pixel_values': images})[0]
+  
+
+                    logits[k] = res[0]
+                    probs[k] = scipy.special.expit(logits[k])
+               
         
         else:
             
@@ -381,7 +414,7 @@ class OnnxClip:
                 contexts[k] =  self.get_text_embeddings(texts[k])
 
           
-            probs, logits = get_similarity_scores(image_embeddings, contexts)
+            probs, logits = get_probabilities(image_embeddings, contexts)
 
         
         return probs, logits

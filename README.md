@@ -91,7 +91,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   ```python
   from PIL import Image
   from sam.model import OnnxSAM
-  from clip.model import OnnxClip, softmax, get_similarity_scores
+  from clip.model import OnnxLip, softmax, get_probabilities
 
   images = [Image.open("clip/data/dog.jpg").convert("RGB")]
 
@@ -103,7 +103,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
       }
 
   #type='clip' is also avvaiilable with this usage    
-  onnx_model = OnnxClip(batch_size=16, type='siglip_full')
+  onnx_model = OnnxLip(batch_size=16, type='siglip_full')
   probs, _ = onnx_model.inference(images, texts)
 
   for k,v in texts.items():
@@ -118,7 +118,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   ```python
   from PIL import Image
   from sam.model import OnnxSAM
-  from clip.model import OnnxClip, softmax, get_similarity_scores
+  from clip.model import OnnxLip, softmax, get_probabilities
 
 
   images = [Image.open("clip/data/dog.jpg").convert("RGB")]
@@ -128,7 +128,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
       }
 
 
-  onnx_model = OnnxClip(batch_size=16, type='clip')
+  onnx_model = OnnxLip(batch_size=16, type='clip')
 
   image_embeddings = onnx_model.get_image_embeddings(images)
   text_embeddings_class = onnx_model.get_text_embeddings(texts['classification'])
@@ -139,7 +139,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
               "situational": text_embeddings_situational,
             }
 
-  probs, logits = get_similarity_scores(image_embeddings, contexts)
+  probs, logits = get_probabilities(image_embeddings, contexts)
 
   for k,v in contexts.items():
       print(f'\ncontext: {k}\n')

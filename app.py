@@ -6,7 +6,7 @@ example =  ["a photo of space",
             "a photo of a man",
             "a photo of a man in dungarees",
             "a photo of a sad man in dungarees",
-            "a photo of a sad man in dungarees with short hair and orange container to the right",
+            "a photo of a sad man in dungarees with short hair and a orange container to the right",
             "a photo of a sad man in dungarees with short hair",
             "a photo of a happy man in dungarees",
             "A photo of Christopher Nolan"]
@@ -19,11 +19,13 @@ def classify(image, text):
     texts = {"classification": text.split(',')
         }
 
-    #type='clip' is also avvaiilable with this usage    
+    #type='clip' is also avvailable with this usage    
     onnx_model = OnnxClip(batch_size=16, type='siglip_full')
     probs, _ = onnx_model.inference(images, texts)
-
-    return {label: prob for label, prob in zip(texts['classification'], probs['classification'])}
+      
+    probs = [float(p) for p in probs['classification']]
+ 
+    return {label: prob for label, prob in zip(texts['classification'],probs)}
 
 
 demo = gr.Interface(
