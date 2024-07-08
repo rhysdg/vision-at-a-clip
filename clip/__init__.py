@@ -1,12 +1,12 @@
 from .preprocessor import Preprocessor
 from .tokenizer import Tokenizer
 from .siglip_tokenizer import SiglipTokenizer
-from .model import OnnxClip, softmax, get_similarity_scores
+from .model import OnnxLip, softmax, get_similarity_scores
 
 __all__ = [
     "Preprocessor",
     "Tokenizer",
-    "OnnxClip",
+    "OnnxLip",
     "softmax",
     "get_similarity_scores",
 ]
