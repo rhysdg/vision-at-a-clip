@@ -5,7 +5,7 @@
 
 <!-- PROJECT LOGO -->
 <br />
-  <h3 align="center">  Vision at a CLIP: Multimodal Vision at Speed</h2>
+  <h3 align="center"> Vision at a CLIP: Multimodal Vision at Speed</h2>
   <p align="center">
      Low-latency image rationalization and search with contrastive language-image pre-training
      <br />
@@ -197,11 +197,16 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
     ![alt text](images/gradio.png)
 
+
+
+- For variant manual SigLIP conversion see the following [issue](https://github.com/rhysdg/vision-at-a-clip/issues/6)
+
 <!-- PROPOSED UPDATES -->
 ## Future updates
-
-- CLIP/SigLIP attention transfomred to multi point SAM inference - **in progress**
-- Example Gradio app - **in progress**
+- <strike> Example Gradio app </strike> - **done**
+- Deprecating Huggingface dependency - standalone siglip tokenization for lightweight deployments - **in progress**
+- Grounding Dino ONNX - possibly a better solution than sam here for localisation - prompts arre builtin too
+- CLIP/SigLIP attention transformed to multi point SAM inference - **in progress**
 - Python packaging - **scheduled**
 - TensorRT - **pending**
 - SlimSAM - *pending**
