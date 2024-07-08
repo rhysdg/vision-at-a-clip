@@ -23,11 +23,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import sentencepiece as spm
 
-#from ...convert_slow_tokenizer import import_protobuf
 from .utils.tokenization_utils import PreTrainedTokenizer
 from .utils.tokenization_utils_base import AddedToken
 from transformers.utils import sentencepiece_model_pb2_new as sentencepiece_model_pb2
-#from transformers.utils import sentencepiece_model_pb2
 
 if TYPE_CHECKING:
     from ...tokenization_utils_base import TextInput
@@ -40,8 +38,6 @@ VOCAB_FILES_NAMES = {"vocab_file": "spiece.model"}
 
 
 SPIECE_UNDERLINE = "▁"
-
-print('weeee')
 
 
 
