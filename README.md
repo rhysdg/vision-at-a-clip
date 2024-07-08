@@ -5,9 +5,9 @@
 
 <!-- PROJECT LOGO -->
 <br />
-  <h3 align="center"> SAM at a CLIP: Multimodal Vision at Speed</h2>
+  <h3 align="center">  Vision at a CLIP: Multimodal Vision at Speed</h2>
   <p align="center">
-     Low-latency image segmentation and search with contrastive language-image pre-training
+     Low-latency image rationalization and search with contrastive language-image pre-training
      <br />
     <a href="https://github.com/rhysdg/sam-at-a-clip/wiki"<strong>Explore the docs »</strong></a>
     <br />
@@ -91,7 +91,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   ```python
   from PIL import Image
   from sam.model import OnnxSAM
-  from clip.model import OnnxClip, softmax, get_similarity_scores
+  from clip.model import OnnxLip, softmax, get_similarity_scores
 
   images = [Image.open("clip/data/dog.jpg").convert("RGB")]
 
@@ -103,7 +103,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
       }
 
   #type='clip' is also avvaiilable with this usage    
-  onnx_model = OnnxClip(batch_size=16, type='siglip_full')
+  onnx_model = OnnxLip(batch_size=16, type='siglip_full')
   probs, _ = onnx_model.inference(images, texts)
 
   for k,v in texts.items():
@@ -118,7 +118,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   ```python
   from PIL import Image
   from sam.model import OnnxSAM
-  from clip.model import OnnxClip, softmax, get_similarity_scores
+  from clip.model import OnnxLip, softmax, get_similarity_scores
 
 
   images = [Image.open("clip/data/dog.jpg").convert("RGB")]
@@ -128,7 +128,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
       }
 
 
-  onnx_model = OnnxClip(batch_size=16, type='clip')
+  onnx_model = OnnxLip(batch_size=16, type='clip')
 
   image_embeddings = onnx_model.get_image_embeddings(images)
   text_embeddings_class = onnx_model.get_text_embeddings(texts['classification'])
@@ -139,7 +139,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
               "situational": text_embeddings_situational,
             }
 
-  probs, logits = get_similarity_scores(image_embeddings, contexts)
+  probs, logits = get_probabilities(image_embeddings, contexts)
 
   for k,v in contexts.items():
       print(f'\ncontext: {k}\n')

@@ -70,7 +70,7 @@ def cosine_similarity(
     return embeddings_1 @ embeddings_2.T
 
 
-def get_similarity_scores(image_embedding: list,
+def get_probabilities(image_embedding: list,
                            queries: dict):
     """Compute pairwise similarity scores between two arrays of embeddings.
 
@@ -414,7 +414,7 @@ class OnnxLip:
                 contexts[k] =  self.get_text_embeddings(texts[k])
 
           
-            probs, logits = get_similarity_scores(image_embeddings, contexts)
+            probs, logits = get_probabilities(image_embeddings, contexts)
 
         
         return probs, logits
