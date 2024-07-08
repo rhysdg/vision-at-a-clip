@@ -44,14 +44,10 @@ def cosine_similarity(
         An array of shape (N, M) with the pairwise cosine similarities.
     """
 
-
-
-    for embeddings in [embeddings_1, embeddings_2]:
-        if len(embeddings.shape) != 2:
-            raise ValueError(
-                f"Expected 2-D arrays but got shape {embeddings.shape}."
-            )
-
+    if len(embeddings_1.shape) != 2 or len(embeddings_2.shape) != 2:
+        raise ValueError(
+            f"Expected 2-D arrays but got shapes {embeddings_1.shape} and {embeddings_2.shape}."
+        )
 
     d1 = embeddings_1.shape[1]
     d2 = embeddings_2.shape[1]
@@ -78,6 +74,8 @@ def get_similarity_scores(image_embedding: list,
                            queries: dict):
     """Compute pairwise similarity scores between two arrays of embeddings.
 
+    args: image_embedding: list of images
+    queries: dictionary of pre-computed text embeddings
     """
 
     res_dict = {}
@@ -403,10 +401,11 @@ class OnnxClip:
 
                 
                     res = self.image_model.run(None, {'input_ids': incoming_texts,'pixel_values': images})[0]
+  
 
                     logits[k] = res[0]
                     probs[k] = scipy.special.expit(logits[k])
-
+               
         
         else:
             
