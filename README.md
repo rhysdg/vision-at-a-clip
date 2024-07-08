@@ -91,7 +91,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   ```python
   from PIL import Image
   from sam.model import OnnxSAM
-  from clip.model import OnnxLip, softmax, get_similarity_scores
+  from clip.model import OnnxLip, softmax, get_probabilities
 
   images = [Image.open("clip/data/dog.jpg").convert("RGB")]
 
@@ -118,7 +118,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   ```python
   from PIL import Image
   from sam.model import OnnxSAM
-  from clip.model import OnnxLip, softmax, get_similarity_scores
+  from clip.model import OnnxLip, softmax, get_probabilities
 
 
   images = [Image.open("clip/data/dog.jpg").convert("RGB")]
