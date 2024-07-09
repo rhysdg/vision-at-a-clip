@@ -1880,6 +1880,10 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
                 f"containing all relevant files for a {cls.__name__} tokenizer."
             )
 
+
+        # Get files from url, cache, or disk depending on the case
+        resolved_vocab_files = {}
+        unresolved_files = []
         for file_id, file_path in vocab_files.items():
             if file_id not in resolved_vocab_files:
                 continue
