@@ -284,7 +284,6 @@ class OnnxLip:
                 return self._get_empty_embedding()
 
             batch = np.concatenate(images)
-            print(batch.shape)
 
             if self.type == 'siglip':
                 incoming = {"pixel_values": batch}
@@ -328,9 +327,7 @@ class OnnxLip:
           
             if self.type == 'siglip':
 
-                incoming = {"input_ids": text}
-
-                text = self._siglip_tokenizer(incoming, 
+                text = self._siglip_tokenizer(texts, 
                         return_tensors='np', 
                         padding="max_length",
                         truncation=True
@@ -338,7 +335,8 @@ class OnnxLip:
                 if len(text) == 0:
                     return self._get_empty_embedding()
 
-                hidden, pooled = self.text_model.run(None, incoming)
+                #text is already in a input_ids keypair here 
+                hidden, pooled = self.text_model.run(None, {'input_ids': text['input_ids'].astype(np.int64)})
                 
                 #needs adjusting to a list followed by np.concatenate
                 self.hidden_text =  hidden
