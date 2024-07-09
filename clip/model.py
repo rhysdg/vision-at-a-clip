@@ -136,7 +136,7 @@ class OnnxLip:
                 passing large amounts of data (perhaps ~100 or more).
             
         """ 
-        assert device in ['cpu', 'gpu'], 'please use either gpu or cpu!'
+        assert device in ['cpu', 'cuda'], 'please use either cuda or cpu!'
 
         self.providers = [
                     'CPUExecutionProvider'
@@ -144,7 +144,7 @@ class OnnxLip:
 
         if device == 'cuda':
             self.providers.insert(0, 'CUDAExecutionProvider')
-            
+
         if trt:
             self.providers.insert(0, 'TensorrtExecutionProvider')
      
@@ -251,7 +251,7 @@ class OnnxLip:
         
             # `providers` need to be set explicitly since ORT 1.9
             return ort.InferenceSession(
-                path, providers=ort.get_available_providers()
+                path, providers=self.providers
             )
 
     def get_image_embeddings(
