@@ -84,7 +84,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 - Not also that an `OnnxSAM` class is also available with the same instantiation and automatic model download - further examples are on their way along with SigLIP integration
 
 
-## Example usage (CLIP/SigLIP - SAM incoming) :
+## Example usage (CLIP/SigLIP) :
 
 - For the full 384 SigLIP model go ahead and use the `.inference` method as follows. Noting that CLIP is avaiable via the same method. Either model will switch between softmax and sigmoid accordingly:
 
@@ -204,7 +204,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 <!-- PROPOSED UPDATES -->
 ## Future updates
 - <strike> Example Gradio app </strike> - **done**
-- Deprecating Huggingface dependency - standalone siglip tokenization for lightweight deployments - **in progress**
+- <strike> Deprecating Huggingface dependency - standalone siglip tokenization for lightweight deployments <strike>  - **done**
 - Grounding Dino ONNX - possibly a better solution than sam here for localisation - prompts arre builtin too
 - CLIP/SigLIP attention transformed to multi point SAM inference - **in progress**
 - Python packaging - **scheduled**
