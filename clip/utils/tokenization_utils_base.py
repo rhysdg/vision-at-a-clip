@@ -1757,86 +1757,6 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
         if tokenizer_kwargs is None:
             tokenizer_kwargs = {}
 
-        using_default_template = False
-
-        # First, handle the cases when the model has a dict of multiple templates
-        if isinstance(self.chat_template, dict) or (
-            self.chat_template is None and isinstance(self.default_chat_template, dict)
-        ):
-            if self.chat_template is not None:
-                template_dict = self.chat_template
-                using_default_dict = False
-            else:
-                template_dict = self.default_chat_template
-                using_default_dict = True
-            if chat_template is not None and chat_template in template_dict:
-                # The user can pass the name of a template to the chat template argument instead of an entire template
-                chat_template = template_dict[chat_template]
-                if using_default_dict:
-                    using_default_template = True
-            elif chat_template is None:
-                if tools is not None and "tool_use" in template_dict:
-                    chat_template = template_dict["tool_use"]
-                elif "default" in template_dict:
-                    chat_template = template_dict["default"]
-                else:
-                    raise ValueError(
-                        "This model has multiple chat templates with no default specified! Please either pass a chat "
-                        "template or the name of the template you wish to use to the `chat_template` argument. Available "
-                        f"template names are {sorted(template_dict.keys())}."
-                    )
-                if using_default_dict:
-                    using_default_template = True
-
-        elif chat_template is None:
-            # These are the cases when the model has a single template
-            # priority: `chat_template` argument > `tokenizer.chat_template` > `tokenizer.default_chat_template
-            if self.chat_template is not None:
-                chat_template = self.chat_template
-            else:
-                chat_template = self.default_chat_template
-                using_default_template = True
-
-        if using_default_template:
-            logger.warning_once(
-                "No chat template is set for this tokenizer, falling back to a default class-level template. This is "
-                "very error-prone, because models are often trained with templates different from the class default! "
-                "Default chat templates are a legacy feature and will be removed in Transformers v4.43, at which "
-                "point any code depending on them will stop working. We recommend setting a valid chat template before "
-                "then to ensure that this model continues working without issues."
-            )
-
-        # Compilation function uses a cache to avoid recompiling the same template
-        compiled_template = self._compile_jinja_template(chat_template)
-
-        if isinstance(conversation, (list, tuple)) and (
-            isinstance(conversation[0], (list, tuple)) or hasattr(conversation[0], "messages")
-        ):
-            conversations = conversation
-            is_batched = True
-        else:
-            conversations = [conversation]
-            is_batched = False
-
-        if documents is not None:
-            for document in documents:
-                if not isinstance(document, dict):
-                    raise TypeError("Documents should be a list of dicts with 'title' and 'text' keys!")
-
-        rendered = []
-        template_kwargs = {**self.special_tokens_map, **kwargs}  # kwargs overwrite special tokens if both are present
-        for chat in conversations:
-            if hasattr(chat, "messages"):
-                # Indicates it's a Conversation object
-                chat = chat.messages
-            rendered_chat = compiled_template.render(
-                messages=chat,
-                tools=tool_schemas,
-                documents=documents,
-                add_generation_prompt=add_generation_prompt,
-                **template_kwargs,
-            )
-            rendered.append(rendered_chat)
 
         if not is_batched:
             rendered = rendered[0]
@@ -2049,69 +1969,8 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
                     "tokenizer_file": FULL_TOKENIZER_FILE,
                 }
                 vocab_files = {**cls.vocab_files_names, **additional_files_names}
-                if "tokenizer_file" in vocab_files:
-                    # Try to get the tokenizer config to see if there are versioned tokenizer files.
-                    fast_tokenizer_file = FULL_TOKENIZER_FILE
-                    resolved_config_file = cached_file(
-                        pretrained_model_name_or_path,
-                        TOKENIZER_CONFIG_FILE,
-                        cache_dir=cache_dir,
-                        force_download=force_download,
-                        resume_download=resume_download,
-                        proxies=proxies,
-                        token=token,
-                        revision=revision,
-                        local_files_only=local_files_only,
-                        subfolder=subfolder,
-                        user_agent=user_agent,
-                        _raise_exceptions_for_gated_repo=False,
-                        _raise_exceptions_for_missing_entries=False,
-                        _raise_exceptions_for_connection_errors=False,
-                        _commit_hash=commit_hash,
-                    )
-
-                    if resolved_config_file is not None:
-                        with open(resolved_config_file, encoding="utf-8") as reader:
-                            tokenizer_config = json.load(reader)
-                            if "fast_tokenizer_files" in tokenizer_config:
-                                fast_tokenizer_file = get_fast_tokenizer_file(tokenizer_config["fast_tokenizer_files"])
-                    vocab_files["tokenizer_file"] = fast_tokenizer_file
-
-        # Get files from url, cache, or disk depending on the case
-        resolved_vocab_files = {}
-        unresolved_files = []
-        for file_id, file_path in vocab_files.items():
-            if file_path is None:
-                resolved_vocab_files[file_id] = None
-            elif single_file_id == file_id:
-                if os.path.isfile(file_path):
-                    resolved_vocab_files[file_id] = file_path
-            else:
-                resolved_vocab_files[file_id] = cached_file(
-                    pretrained_model_name_or_path,
-                    file_path,
-                    cache_dir=cache_dir,
-                    force_download=force_download,
-                    proxies=proxies,
-                    resume_download=resume_download,
-                    local_files_only=local_files_only,
-                    token=token,
-                    user_agent=user_agent,
-                    revision=revision,
-                    subfolder=subfolder,
-                    _raise_exceptions_for_gated_repo=False,
-                    _raise_exceptions_for_missing_entries=False,
-                    _raise_exceptions_for_connection_errors=False,
-                    _commit_hash=commit_hash,
-                )
+            
                 
-
-        if len(unresolved_files) > 0:
-            logger.info(
-                f"Can't load following files from cache: {unresolved_files} and cannot check if these "
-                "files are necessary for the tokenizer to operate."
-            )
-
         # If one passes a GGUF file path to `gguf_file` there is no need for this check as the tokenizer will be
         # loaded directly from the GGUF file.
         if all(full_file_name is None for full_file_name in resolved_vocab_files.values()) and not gguf_file:
@@ -4123,32 +3982,3 @@ For a more complete example, see the implementation of `prepare_seq2seq_batch`.
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
-
-def get_fast_tokenizer_file(tokenization_files: List[str]) -> str:
-    """
-    Get the tokenization file to use for this version of transformers.
-
-    Args:
-        tokenization_files (`List[str]`): The list of available configuration files.
-
-    Returns:
-        `str`: The tokenization file to use.
-    """
-    tokenizer_files_map = {}
-    for file_name in tokenization_files:
-        search = _re_tokenizer_file.search(file_name)
-        if search is not None:
-            v = search.groups()[0]
-            tokenizer_files_map[v] = file_name
-    available_versions = sorted(tokenizer_files_map.keys())
-
-    # Defaults to FULL_TOKENIZER_FILE and then try to look at some newer versions.
-    tokenizer_file = FULL_TOKENIZER_FILE
-    for v in available_versions:
-        if version.parse(v) <= transformers_version:
-            tokenizer_file = tokenizer_files_map[v]
-        else:
-            # No point going further since the versions are sorted.
-            break
-
-    return tokenizer_file
