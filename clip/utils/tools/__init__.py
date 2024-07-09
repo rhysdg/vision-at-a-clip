@@ -15,11 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from huggingface_hub import get_full_repo_name  # for backward compatibility
-from huggingface_hub.constants import HF_HUB_DISABLE_TELEMETRY as DISABLE_TELEMETRY  # for backward compatibility
 from packaging import version
 
-#from .. import __version__
 from .backbone_utils import BackboneConfigMixin, BackboneMixin
 from .constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, IMAGENET_STANDARD_MEAN, IMAGENET_STANDARD_STD
 from .doc import (
@@ -184,13 +181,7 @@ from .import_utils import (
     requires_backends,
     torch_only_method,
 )
-from .peft_utils import (
-    ADAPTER_CONFIG_NAME,
-    ADAPTER_SAFE_WEIGHTS_NAME,
-    ADAPTER_WEIGHTS_NAME,
-    check_peft_version,
-    find_adapter_config_file,
-)
+
 
 
 WEIGHTS_NAME = "pytorch_model.bin"
@@ -217,20 +208,3 @@ MULTIPLE_CHOICE_DUMMY_INPUTS = [
 ] * 2  # Needs to have 0s and 1s only since XLM uses it for langs too.
 DUMMY_INPUTS = [[7, 6, 0, 0, 1], [1, 2, 3, 0, 0], [0, 0, 0, 4, 5]]
 DUMMY_MASK = [[1, 1, 1, 1, 1], [1, 1, 1, 0, 0], [0, 0, 0, 1, 1]]
-
-
-def check_min_version(min_version):
-    if version.parse(__version__) < version.parse(min_version):
-        if "dev" in min_version:
-            error_message = (
-                "This example requires a source install from HuggingFace Transformers (see "
-                "`https://huggingface.co/docs/transformers/installation#install-from-source`),"
-            )
-        else:
-            error_message = f"This example requires a minimum version of {min_version},"
-        error_message += f" but the version found is {__version__}.\n"
-        raise ImportError(
-            error_message
-            + "Check out https://github.com/huggingface/transformers/tree/main/examples#important-note for the examples corresponding to other "
-            "versions of HuggingFace Transformers."
-        )

@@ -1,6 +1,8 @@
 import numbers
 import random
 import warnings
+import collections
+from itertools import repeat
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 

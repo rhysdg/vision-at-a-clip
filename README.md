@@ -74,7 +74,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 - SigLIP is available and recommended by default given the innovation made at with it's loss function leading to better inference. model types however can be changed at instantiation with:
 
   ```python
-  onnx_model = OnnxClip(batch_size=16, type='siglip_full')
+  onnx_model = OnnxLip(batch_size=16, type='siglip_full')
   ```
 
 - Notice also cosine similrity at `get_similarity_scores` is adusted to handle multiple context - in other words a handful of text embedding can be sent as 'contexts', and send to the function to be evaluated against a single image or a batch of images.
@@ -143,7 +143,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
   for k,v in contexts.items():
       print(f'\ncontext: {k}\n')
-      for text, p in zip(texts[k], probs[k][0]):
+      for text, p in zip(texts[k], probs[k]):
           print(f"Probability that the image is '{text}': {p:.3f}")
   ```
 

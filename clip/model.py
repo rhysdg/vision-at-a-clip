@@ -88,14 +88,14 @@ def get_probabilities(image_embedding: list,
       if image_embedding.ndim == 1:
           # Convert to 2-D array using x[np.newaxis, :]
           # and remove the extra dimension at the end.
-          res_dict[key] = softmax(get_similarity_scores(
+          res_dict[key] = softmax(get_probabilities(
               image_embedding[np.newaxis, :], query
           )[0])
 
       if query.ndim == 1:
           # Convert to 2-D array using x[np.newaxis, :]
           # and remove the extra dimension at the end.
-          res_dict[key] = softmax(get_similarity_scores(
+          res_dict[key] = softmax(get_probabilities(
               image_embedding, query[np.newaxis, :]
           )[:, 0])
 
@@ -136,11 +136,15 @@ class OnnxLip:
                 passing large amounts of data (perhaps ~100 or more).
             
         """ 
+        assert device in ['cpu', 'cuda'], 'please use either cuda or cpu!'
 
         self.providers = [
-                    'CUDAExecutionProvider',
                     'CPUExecutionProvider'
                 ]
+
+        if device == 'cuda':
+            self.providers.insert(0, 'CUDAExecutionProvider')
+
         if trt:
             self.providers.insert(0, 'TensorrtExecutionProvider')
      
@@ -166,6 +170,7 @@ class OnnxLip:
                             }
 
         self.image_model, self.text_model = self._load_models(model)
+
 
         if 'siglip' in type:
             #currently only supporting 384
@@ -246,7 +251,7 @@ class OnnxLip:
         
             # `providers` need to be set explicitly since ORT 1.9
             return ort.InferenceSession(
-                path, providers=ort.get_available_providers()
+                path, providers=self.providers
             )
 
     def get_image_embeddings(
@@ -268,9 +273,15 @@ class OnnxLip:
         """
         if not with_batching or self._batch_size is None:
             # Preprocess images
-            images = [
-                self._preprocessor.encode_image(image) for image in images
-            ]
+            if 'siglip' in self.type:
+                images = [
+                    np.expand_dims(self._siglip_preprocessor(image).numpy(), 0) for image in images
+                ]
+            else:
+                images = [
+                    self._preprocessor.encode_image(image) for image in images
+                ]
+
 
             
             if not images:
@@ -320,7 +331,7 @@ class OnnxLip:
           
             if self.type == 'siglip':
 
-                text = self._siglip_tokenizer(incoming, 
+                text = self._siglip_tokenizer(texts, 
                         return_tensors='np', 
                         padding="max_length",
                         truncation=True
@@ -328,9 +339,8 @@ class OnnxLip:
                 if len(text) == 0:
                     return self._get_empty_embedding()
 
-                incoming = {"input_ids": text}
-             
-                hidden, pooled = self.text_model.run(None, incoming)
+                #text is already in a input_ids keypair here 
+                hidden, pooled = self.text_model.run(None, {'input_ids': text['input_ids'].astype(np.int64)})
                 
                 #needs adjusting to a list followed by np.concatenate
                 self.hidden_text =  hidden
