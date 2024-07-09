@@ -433,8 +433,10 @@ class PreTrainedTokenizer(PreTrainedTokenizerBase):
 
         # 4. If some of the special tokens are not part of the vocab, we add them, at the end.
         # the order of addition is the same as self.SPECIAL_TOKENS_ATTRIBUTES following `tokenizers`
+        #Adding str(token) to resolve AddedToken unshashable type
+
         self._add_tokens(
-            [token for token in self.all_special_tokens_extended if token not in self._added_tokens_encoder],
+            [token for token in self.all_special_tokens_extended if str(token) not in self._added_tokens_encoder],
             special_tokens=True,
         )
 
@@ -552,8 +554,13 @@ class PreTrainedTokenizer(PreTrainedTokenizerBase):
             elif special_tokens:
                 # doing token.special=True changes the normalization! will fix in rust
                 # this is important and the only reason why the AddedTokens in each class are normalized by default
-                token.__setstate__({"special": True, "normalized": token.normalized})
-            if token in self._added_tokens_decoder:
+                #token.__setstate__({"special": True, "normalized": token.normalized})
+                #token.__setstate__({"special": True, "normalized": token.normalized})
+                token.special = True
+                token.normalized = token.normalized
+
+            #resolving unhashable type AddedToke wiht str(token)    
+            if str(token) in self._added_tokens_decoder:
                 continue
             if not token.special and token.normalized and getattr(self, "do_lower_case", False):
                 # Normalize if requested
@@ -576,9 +583,10 @@ class PreTrainedTokenizer(PreTrainedTokenizerBase):
         self._update_trie()
         return added_tokens
 
+    #Adding str(token) to resolve AddedToken unshashable type
     def _update_trie(self, unique_no_split_tokens: Optional[str] = []):
         for token in self._added_tokens_decoder.values():
-            if token not in self.tokens_trie._tokens:
+            if str(token) not in self.tokens_trie._tokens:
                 self.tokens_trie.add(token.content)
         for token in unique_no_split_tokens:
             if token not in self.tokens_trie._tokens:

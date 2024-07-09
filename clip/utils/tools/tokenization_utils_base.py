@@ -71,39 +71,39 @@ if TYPE_CHECKING:
 #if is_tokenizers_available():
     #from tokenizers import AddedToken
     #from tokenizers import Encoding as EncodingFast
-#else:
+else:
 
-@dataclass(frozen=False, eq=True)
-class AddedToken:
-    """
-    AddedToken represents a token to be added to a Tokenizer An AddedToken can have special options defining the
-    way it should behave.
+    @dataclass(frozen=False, eq=True)
+    class AddedToken:
+        """
+        AddedToken represents a token to be added to a Tokenizer An AddedToken can have special options defining the
+        way it should behave.
 
-    The `normalized` will default to `not special` if it is not specified, similarly to the definition in
-    `tokenizers`.
-    """
+        The `normalized` will default to `not special` if it is not specified, similarly to the definition in
+        `tokenizers`.
+        """
 
-    def __init__(
-        self, content: str, single_word=False, lstrip=False, rstrip=False, special=False, normalized=None
-    ):
-        self.content = content
-        self.single_word = single_word
-        self.lstrip = lstrip
-        self.rstrip = rstrip
-        self.special = special
-        self.normalized = normalized if normalized is not None else not special
+        def __init__(
+            self, content: str, single_word=False, lstrip=False, rstrip=False, special=False, normalized=None
+        ):
+            self.content = content
+            self.single_word = single_word
+            self.lstrip = lstrip
+            self.rstrip = rstrip
+            self.special = special
+            self.normalized = normalized if normalized is not None else not special
 
-    def __getstate__(self):
-        return self.__dict__
+        def __getstate__(self):
+            return self.__dict__
 
-    def __str__(self):
-        return self.content
+        def __str__(self):
+            return self.content
 
-@dataclass
-class EncodingFast:
-    """This is dummy class because without the `tokenizers` library we don't have these objects anyway"""
+    @dataclass
+    class EncodingFast:
+        """This is dummy class because without the `tokenizers` library we don't have these objects anyway"""
 
-    pass
+        pass
 
 
 logger = logging.get_logger(__name__)
