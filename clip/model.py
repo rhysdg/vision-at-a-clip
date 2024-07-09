@@ -136,11 +136,15 @@ class OnnxLip:
                 passing large amounts of data (perhaps ~100 or more).
             
         """ 
+        assert device in ['cpu', 'gpu'], 'please use either gpu or cpu!'
 
         self.providers = [
-                    'CUDAExecutionProvider',
                     'CPUExecutionProvider'
                 ]
+
+        if device == 'cuda':
+            self.providers.insert(0, 'CUDAExecutionProvider')
+            
         if trt:
             self.providers.insert(0, 'TensorrtExecutionProvider')
      
