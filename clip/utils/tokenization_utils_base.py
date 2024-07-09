@@ -1869,17 +1869,6 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
                 }
                 vocab_files = {**cls.vocab_files_names, **additional_files_names}
             
-                
-        # If one passes a GGUF file path to `gguf_file` there is no need for this check as the tokenizer will be
-        # loaded directly from the GGUF file.
-        if all(full_file_name is None for full_file_name in resolved_vocab_files.values()) and not gguf_file:
-            raise EnvironmentError(
-                f"Can't load tokenizer for '{pretrained_model_name_or_path}'. If you were trying to load it from "
-                "'https://huggingface.co/models', make sure you don't have a local directory with the same name. "
-                f"Otherwise, make sure '{pretrained_model_name_or_path}' is the correct path to a directory "
-                f"containing all relevant files for a {cls.__name__} tokenizer."
-            )
-
 
         # Get files from url, cache, or disk depending on the case
         resolved_vocab_files = {}
