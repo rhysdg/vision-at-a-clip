@@ -5,7 +5,7 @@ from clip.model import OnnxLip
 
 
 def test_clip_instantiation():
-    onnx_model = OnnxLip(batch_size=16, device='cpu', trt=False)
+    onnx_model = OnnxLip(batch_size=16, type='clip', device='cpu', trt=False)
     assert os.path.isfile('./clip/data/clip_image_model_vitb32.onnx')
     assert os.path.isfile('./clip/data/clip_text_model_vitb32.onnx')
 
