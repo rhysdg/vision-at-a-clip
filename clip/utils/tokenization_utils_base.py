@@ -2069,7 +2069,7 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
                         _raise_exceptions_for_connection_errors=False,
                         _commit_hash=commit_hash,
                     )
-                    commit_hash = extract_commit_hash(resolved_config_file, commit_hash)
+
                     if resolved_config_file is not None:
                         with open(resolved_config_file, encoding="utf-8") as reader:
                             tokenizer_config = json.load(reader)
@@ -2104,7 +2104,7 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
                     _raise_exceptions_for_connection_errors=False,
                     _commit_hash=commit_hash,
                 )
-                commit_hash = extract_commit_hash(resolved_vocab_files[file_id], commit_hash)
+                
 
         if len(unresolved_files) > 0:
             logger.info(
@@ -2521,11 +2521,6 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
             tokenizer_config["auto_map"] = self._auto_map
         if getattr(self, "_processor_class", None) is not None:
             tokenizer_config["processor_class"] = self._processor_class
-
-        # If we have a custom model, we copy the file defining it in the folder and set the attributes so it can be
-        # loaded from the Hub.
-        if self._auto_class is not None:
-            custom_object_save(self, save_directory, config=tokenizer_config)
 
         # remove private information
         if "name_or_path" in tokenizer_config:
@@ -4149,7 +4144,6 @@ def get_fast_tokenizer_file(tokenization_files: List[str]) -> str:
 
     # Defaults to FULL_TOKENIZER_FILE and then try to look at some newer versions.
     tokenizer_file = FULL_TOKENIZER_FILE
-    transformers_version = version.parse(__version__)
     for v in available_versions:
         if version.parse(v) <= transformers_version:
             tokenizer_file = tokenizer_files_map[v]
