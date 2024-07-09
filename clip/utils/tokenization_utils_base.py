@@ -1818,22 +1818,6 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
             conversations = [conversation]
             is_batched = False
 
-        # We accept either JSON schemas or functions for tools. If we get functions, we convert them to schemas
-        if tools is not None:
-            tool_schemas = []
-            for tool in tools:
-                if isinstance(tool, dict):
-                    tool_schemas.append(tool)
-                elif isfunction(tool):
-                    tool_schemas.append(get_json_schema(tool))
-                else:
-                    raise ValueError(
-                        "Tools should either be a JSON schema, or a callable function with type hints "
-                        "and a docstring suitable for auto-conversion to a schema."
-                    )
-        else:
-            tool_schemas = None
-
         if documents is not None:
             for document in documents:
                 if not isinstance(document, dict):
@@ -2031,17 +2015,13 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
         if from_pipeline is not None:
             user_agent["using_pipeline"] = from_pipeline
 
-        if is_offline_mode() and not local_files_only:
-            logger.info("Offline mode: forcing local_files_only=True")
-            local_files_only = True
-
         pretrained_model_name_or_path = str(pretrained_model_name_or_path)
         vocab_files = {}
         init_configuration = {}
 
         is_local = os.path.isdir(pretrained_model_name_or_path)
         single_file_id = None
-        if os.path.isfile(pretrained_model_name_or_path) or is_remote_url(pretrained_model_name_or_path):
+        if os.path.isfile(pretrained_model_name_or_path):
             if len(cls.vocab_files_names) > 1 and not gguf_file:
                 raise ValueError(
                     f"Calling {cls.__name__}.from_pretrained() with the path to a single file or url is not "
@@ -2106,8 +2086,6 @@ class PreTrainedTokenizerBase(SpecialTokensMixin):
             elif single_file_id == file_id:
                 if os.path.isfile(file_path):
                     resolved_vocab_files[file_id] = file_path
-                elif is_remote_url(file_path):
-                    resolved_vocab_files[file_id] = download_url(file_path, proxies=proxies)
             else:
                 resolved_vocab_files[file_id] = cached_file(
                     pretrained_model_name_or_path,
