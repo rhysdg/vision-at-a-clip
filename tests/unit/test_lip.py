@@ -12,7 +12,7 @@ def test_clip_instantiation():
 
 def test_siglip_instantiation():
     onnx_model = OnnxLip(batch_size=16, type='siglip', device='cpu', trt=False)
-    assert os.path.isfile('./clip/data/siglip_image_fp16.onnx')
-    assert os.path.isfile('./clip/data/siglip_text_fp16.onnx')
+    assert os.path.isfile('./clip/data/siglip_image_384_fp16.onnx')
+    assert os.path.isfile('./clip/data/siglip_text_384_fp16.onnx')
 
 
