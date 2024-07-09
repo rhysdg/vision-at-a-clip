@@ -12,7 +12,7 @@
     <a href="https://github.com/rhysdg/sam-at-a-clip/wiki"<strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <img src="images/sam_clip.jpg" align="middle" width=200>
+    <img src="images/lip.png" align="middle" width=200>
     <br />
     <br />
     <a href="https://github.com/rhysdg/sam-at-a-clip/issues">Report Bug</a>
