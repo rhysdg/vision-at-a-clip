@@ -167,6 +167,7 @@ class OnnxLip:
 
         self.image_model, self.text_model = self._load_models(model)
 
+
         if 'siglip' in type:
             #currently only supporting 384
             assert size in [384, 224], 'please choose either a 384, or 224 input size for SigLIP!'
@@ -268,15 +269,22 @@ class OnnxLip:
         """
         if not with_batching or self._batch_size is None:
             # Preprocess images
-            images = [
-                self._preprocessor.encode_image(image) for image in images
-            ]
+            if 'siglip' in self.type:
+                images = [
+                    np.expand_dims(self._siglip_preprocessor(image).numpy(), 0) for image in images
+                ]
+            else:
+                images = [
+                    self._preprocessor.encode_image(image) for image in images
+                ]
+
 
             
             if not images:
                 return self._get_empty_embedding()
 
             batch = np.concatenate(images)
+            print(batch.shape)
 
             if self.type == 'siglip':
                 incoming = {"pixel_values": batch}
@@ -320,6 +328,8 @@ class OnnxLip:
           
             if self.type == 'siglip':
 
+                incoming = {"input_ids": text}
+
                 text = self._siglip_tokenizer(incoming, 
                         return_tensors='np', 
                         padding="max_length",
@@ -328,8 +338,6 @@ class OnnxLip:
                 if len(text) == 0:
                     return self._get_empty_embedding()
 
-                incoming = {"input_ids": text}
-             
                 hidden, pooled = self.text_model.run(None, incoming)
                 
                 #needs adjusting to a list followed by np.concatenate
