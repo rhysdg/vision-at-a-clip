@@ -11,7 +11,7 @@ import torchvision
 import torchvision.transforms as T
 import torchvision.transforms.functional as F
 
-from utils.gdino_utils import box_xyxy_to_cxcywh
+from utils.gdino_utils import box_xyxy_to_cxcywh, interpolate
 
 
 

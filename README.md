@@ -60,7 +60,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
 - Open AI's original [CLIP](https://openai.com/index/clip/) - ViT-B/32 based converted to ONNX with full inference class
 - [Siglip](https://arxiv.org/abs/2303.15343) ONNX - FP16 with a quantized variant around the corner, TRT is in our future scope too.
-- [GroundingDINO](https://github.com/IDEA-Research/GroundingDINO) - Swin T based with a bert incased text encoder, converted to ONNX, FP32, mixed precision (dynamic quant shortly), with a full inference API3
+- [GroundingDINO](https://github.com/IDEA-Research/GroundingDINO) - Zero-shot object detection - Swin T based with a bert incased text encoder, converted to ONNX, FP32, mixed precision (dynamic quant shortly), with a full inference API
 - [Segment Anything](https://github.com/facebookresearch/segment-anything) ONNX - TRT on it's way
 
 
