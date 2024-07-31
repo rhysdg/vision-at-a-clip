@@ -9,12 +9,12 @@ from  utils.gdino_utils import load_image, viz
 
 logging.basicConfig(level=logging.INFO)
 
-ogd = OnnxGDINO()
+ogd = OnnxGDINO(type='gdino_fp32')
 
 payload = ogd.preprocess_query("spaceman. spacecraft. water. clouds. space helmet")
 
 
-output_dir = '/home/rhys'
+output_dir = 'output'
 img, img_transformed = load_image('images/wave_planet.webp')
 
 img.save(os.path.join(output_dir, "pred.jpg"))

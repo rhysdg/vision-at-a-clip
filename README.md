@@ -171,7 +171,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
   output_dir = 'output'
 
-  ogd = OnnxGDINO()
+  ogd = OnnxGDINO(type='gdino_fp32')
 
   payload = ogd.preprocess_query("spaceman. spacecraft. water. clouds. space helmet")
   img, img_transformed = load_image('/images/wave_planet.webp')

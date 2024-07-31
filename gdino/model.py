@@ -36,9 +36,9 @@ class OnnxGDINO:
 
 
     def __init__(
-        self, model: str = "gdino_dynamic_fp32", 
+        self, model: str = "gdino_fp32", 
         batch_size: Optional[int] = None, 
-        type='gdino',
+        type='gdino_fp32',
         device='cuda',
         trt=False
     ):
@@ -66,17 +66,17 @@ class OnnxGDINO:
 
         self.embedding_size = 512
 
-        assert type in ['gdino'], 'please choose either: gdino, (quant shortly)'
+        assert type.split('_')[0] in ['gdino'], 'please choose either: gdino, (quant shortly)'
         self.type = type
 
-        self._model_urls = {'gdino_dynamic_fp32': 'https://drive.google.com/file/d/1bdnUeBnMfIhlvswDDMG1L_gSW4URZWt8/view?usp=sharing',
-                            }
+        self._model_urls = {'gdino_fp32.onnx': 'https://drive.google.com/file/d/1bdnUeBnMfIhlvswDDMG1L_gSW4URZWt8/view?usp=sharing',}
 
-        base_dir = f'{os.path.dirname(os.path.abspath(__file__))}/data/vocab.txt'
+        vocab_dir = f'{os.path.dirname(os.path.abspath(__file__))}/data/vocab.txt'
+        model_dir= f'{os.path.dirname(os.path.abspath(__file__))}/data/{type}.onnx'
                     
 
-        self.tokenizer = BertTokenizer(vocab_file=base_dir)
-        self.model = self._load_model(model)
+        self.tokenizer = BertTokenizer(vocab_file=vocab_dir)
+        self.model = self._load_model(model_dir)
         
 
 
