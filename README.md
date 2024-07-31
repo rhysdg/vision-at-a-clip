@@ -8,11 +8,17 @@
   <h3 align="center"> Vision at a CLIP: Multimodal Vision at Speed</h2>
   <p align="center">
      Low-latency image rationalization and search with contrastive language-image pre-training
-     <br />
+    <br />
+    <br />
+     CLIP | SigLIP  | GroundingDINO  | X-CLIP
+    <br />
+    <br />
     <a href="https://github.com/rhysdg/sam-at-a-clip/wiki"<strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <img src="images/lip.png" align="middle" width=200>
+    <img src="images/gdino_res.jpg" align="middle" width=800>
+    <br />
+    *GroundingDINO ONNX prompted with: "spaceman. spacecraft. water. clouds. space helmet. glove"
     <br />
     <br />
     <a href="https://github.com/rhysdg/sam-at-a-clip/issues">Report Bug</a>
@@ -52,9 +58,9 @@ You'll find that all models and pipelines are available to you as separate tools
 
 Last of all the aim here is to keep up with the latest optimised foundation models as we go. This includes optimised postprocessing and an test time augmentations that can help with inference quality. Most importantly the aim is to ensure that ONNX and TensorRT representations are available for use. So far we have: 
 
-- Open AI's original [CLIP](https://openai.com/index/clip/) - ViT-B/32 basedconverted to ONNX
+- Open AI's original [CLIP](https://openai.com/index/clip/) - ViT-B/32 based converted to ONNX with full inference class
 - [Siglip](https://arxiv.org/abs/2303.15343) ONNX - FP16 with a quantized variant around the corner, TRT is in our future scope too.
-- CLIP surgery - [paper](https://arxiv.org/abs/2304.05653)
+- [GroundingDINO](https://github.com/IDEA-Research/GroundingDINO) - Zero-shot object detection - Swin T based with a bert incased text encoder, converted to ONNX, FP32, mixed precision (dynamic quant shortly), with a full inference API
 - [Segment Anything](https://github.com/facebookresearch/segment-anything) ONNX - TRT on it's way
 
 
@@ -84,7 +90,9 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 - Not also that an `OnnxSAM` class is also available with the same instantiation and automatic model download - further examples are on their way along with SigLIP integration
 
 
-## Example usage (CLIP/SigLIP) :
+## Example usage:
+
+### CLIP/SigLIP
 
 - For the full 384 SigLIP model go ahead and use the `.inference` method as follows. Noting that CLIP is avaiable via the same method. Either model will switch between softmax and sigmoid accordingly:
 
@@ -93,7 +101,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   from sam.model import OnnxSAM
   from clip.model import OnnxLip, softmax, get_probabilities
 
-  images = [Image.open("clip/data/dog.jpg").convert("RGB")]
+  images = [Image.open("images/dog.jpg").convert("RGB")]
 
   texts = {"classification":  ["a photo of space",
                               "a photo of a dog",
@@ -121,7 +129,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   from clip.model import OnnxLip, softmax, get_probabilities
 
 
-  images = [Image.open("clip/data/dog.jpg").convert("RGB")]
+  images = [Image.open("images/dog.jpg").convert("RGB")]
 
   texts = {"classification": ["a photo of a man", "a photo of a woman", "s photo of a dog"],
           "situational": ["a dog standing up", "a dog running", "a dog laying on grass"],
@@ -145,6 +153,53 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
       print(f'\ncontext: {k}\n')
       for text, p in zip(texts[k], probs[k]):
           print(f"Probability that the image is '{text}': {p:.3f}")
+  ```
+
+### Grounding DINO
+
+- For zero-shot object detection go ahead and build from the following example:
+
+  ```python
+
+  import os
+  import time
+  import logging
+  import torch
+  import numpy as np
+  from gdino.model import OnnxGDINO
+  from  utils.gdino_utils import load_image, viz
+
+  logging.basicConfig(level=logging.INFO)
+
+  output_dir = 'output'
+
+  ogd = OnnxGDINO(type='gdino_fp32')
+
+  payload = ogd.preprocess_query("spaceman. spacecraft. water. clouds. space helmet. glove")
+  img, img_transformed = load_image('images/wave_planet.webp')
+
+  img.save(os.path.join(output_dir, "pred.jpg"))
+
+  filtered_boxes, predicted_phrases = ogd.inference(img_transformed.astype(np.float32), 
+                                                    payload,
+                                                    text_threshold=0.25, 
+                                                    box_threshold=0.35,)
+
+  size = img.size
+  pred_dict = {
+      "boxes": filtered_boxes,
+      "size": [size[1], size[0]],
+      "labels": predicted_phrases,
+  }
+
+  predictions = viz(img, 
+                    pred_dict,
+                    label_size=25,
+                    bbox_thickness=6
+                    )[0]
+
+  predictions.save(os.path.join(output_dir, "pred.jpg"))
+    
   ```
 
 ## Customisation:
@@ -205,11 +260,9 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 ## Future updates
 - <strike> Example Gradio app </strike> - **done**
 - <strike> Deprecating Huggingface dependency - standalone siglip tokenization for lightweight deployments </strike>  - **done**
-- Grounding Dino ONNX - possibly a better solution than sam here for localisation - prompts arre builtin too
-- CLIP/SigLIP attention transformed to multi point SAM inference - **in progress**
+- <strike> Grounding Dino ONNX - possibly a better solution than sam here for localisation - prompts are built in too </strike>
 - Python packaging - **scheduled**
 - TensorRT - **pending**
-- SlimSAM - *pending**
 - CUDA accelarated SigLIP based vector search with [chromadb](https://www.trychroma.com/) - **pending**
 - [ollama](https://www.ollama.com/) support - **pending**
 
