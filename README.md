@@ -97,7 +97,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   from sam.model import OnnxSAM
   from clip.model import OnnxLip, softmax, get_probabilities
 
-  images = [Image.open("clip/data/dog.jpg").convert("RGB")]
+  images = [Image.open("images/dog.jpg").convert("RGB")]
 
   texts = {"classification":  ["a photo of space",
                               "a photo of a dog",
@@ -125,7 +125,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   from clip.model import OnnxLip, softmax, get_probabilities
 
 
-  images = [Image.open("clip/data/dog.jpg").convert("RGB")]
+  images = [Image.open("images/dog.jpg").convert("RGB")]
 
   texts = {"classification": ["a photo of a man", "a photo of a woman", "s photo of a dog"],
           "situational": ["a dog standing up", "a dog running", "a dog laying on grass"],
@@ -149,6 +149,52 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
       print(f'\ncontext: {k}\n')
       for text, p in zip(texts[k], probs[k]):
           print(f"Probability that the image is '{text}': {p:.3f}")
+  ```
+
+- For zero-shot object detection go ahead and build from the following example:
+
+  ```python
+
+  import os
+  import time
+  import logging
+  import torch
+  import numpy as np
+  from gdino.model import OnnxGDINO
+  from  utils.gdino_utils import load_image, plot_boxes_to_image
+
+  logging.basicConfig(level=logging.INFO)
+
+  output_dir = '/home/rhys'
+
+  ogd = OnnxGDINO()
+
+  payload = ogd.preprocess_query("spaceman. spacecraft. water. clouds. space helmet")
+  img, img_transformed = load_image('/images/wave_planet.webp')
+
+  img.save(os.path.join(output_dir, "pred.jpg"))
+
+
+
+  filtered_boxes, predicted_phrases = ogd.inference(img_transformed.astype(np.float32), 
+                                                    payload,
+                                                    text_threshold=0.25, 
+                                                    box_threshold=0.35,)
+
+
+
+
+
+  size = img.size
+  pred_dict = {
+      "boxes": filtered_boxes,
+      "size": [size[1], size[0]],
+      "labels": predicted_phrases,
+  }
+
+  prediction = viz(img, pred_dict)[0]
+  predicitons.save(os.path.join(output_dir, "pred.jpg"))
+  
   ```
 
 ## Customisation:

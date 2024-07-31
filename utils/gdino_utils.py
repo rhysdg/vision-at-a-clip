@@ -67,7 +67,7 @@ def generate_masks_with_special_tokens_and_transfer_map(tokenized, special_token
     return attention_mask, position_ids.to(torch.long), cate_to_token_mask_list
 
 
-def plot_boxes_to_image(image_pil, tgt):
+def viz(image_pil, tgt):
     H, W = tgt["size"]
     boxes = tgt["boxes"]
     labels = tgt["labels"]

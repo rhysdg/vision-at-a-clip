@@ -4,7 +4,7 @@ import logging
 import torch
 import numpy as np
 from gdino.model import OnnxGDINO
-from  utils.gdino_utils import load_image, plot_boxes_to_image
+from  utils.gdino_utils import load_image, viz
 
 
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +15,7 @@ payload = ogd.preprocess_query("spaceman. spacecraft. water. clouds. space helme
 
 
 output_dir = '/home/rhys'
-img, img_transformed = load_image('/home/rhys/Downloads/wave_planet.webp')
+img, img_transformed = load_image('images/wave_planet.webp')
 
 img.save(os.path.join(output_dir, "pred.jpg"))
 
@@ -37,5 +37,5 @@ pred_dict = {
     "labels": predicted_phrases,
 }
 
-image_with_box = plot_boxes_to_image(img, pred_dict)[0]
+image_with_box = viz(img, pred_dict)[0]
 image_with_box.save(os.path.join(output_dir, "pred.jpg"))
