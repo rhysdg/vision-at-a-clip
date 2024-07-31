@@ -8,11 +8,15 @@
   <h3 align="center"> Vision at a CLIP: Multimodal Vision at Speed</h2>
   <p align="center">
      Low-latency image rationalization and search with contrastive language-image pre-training
-     <br />
+    <br />
+    <br />
+     CLIP | SigLIP  | GroundingDINO  | X-CLIP
+    <br />
+    <br />
     <a href="https://github.com/rhysdg/sam-at-a-clip/wiki"<strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <img src="images/gdino_res.jpg" align="middle" width=200>
+    <img src="images/gdino_res.jpg" align="middle" width=800>
     <br />
     <br />
     <a href="https://github.com/rhysdg/sam-at-a-clip/issues">Report Bug</a>
