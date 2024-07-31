@@ -1,41 +1,26 @@
-import os
-import time
-import logging
-import torch
-import numpy as np
-from gdino.model import OnnxGDINO
-from  utils.gdino_utils import load_image, viz
+
+#import logging
+from PIL import Image
+from sam.model import OnnxSAM
+from clip.model import OnnxLip, softmax, get_probabilities
 
 
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.INFO)
 
-ogd = OnnxGDINO(type='gdino_fp32')
+images = [Image.open("images/dog.jpg").convert("RGB")]
 
-payload = ogd.preprocess_query("spaceman. spacecraft. water. clouds. space helmet")
+texts = {"classification":  ["a photo of space",
+                            "a photo of a dog",
+                            "a photo of a dog with flowers laying on grass",
+                            "a photo of a brown and white dog with blue flowers laying on grass",
+                            "a photo of a brown and white dog with yellow flowers laying on grass"],
+    }
 
+#type='clip' is also avvaiilable with this usage    
+onnx_model = OnnxLip(batch_size=16, type='siglip_full')
+probs, _ = onnx_model.inference(images, texts)
 
-output_dir = 'output'
-img, img_transformed = load_image('images/wave_planet.webp')
-
-img.save(os.path.join(output_dir, "pred.jpg"))
-
-
-
-filtered_boxes, predicted_phrases = ogd.inference(img_transformed.astype(np.float32), 
-                                                  payload,
-                                                  text_threshold=0.25, 
-                                                  box_threshold=0.35,)
-
-
-
-
-
-size = img.size
-pred_dict = {
-    "boxes": filtered_boxes,
-    "size": [size[1], size[0]],  # H,W
-    "labels": predicted_phrases,
-}
-
-image_with_box = viz(img, pred_dict)[0]
-image_with_box.save(os.path.join(output_dir, "pred.jpg"))
+for k,v in texts.items():
+    print(f'\ncontext: {k}\n')
+    for text, p in zip(texts[k], probs[k]):
+        print(f"Probability that the image is '{text}': {p:.3f}")

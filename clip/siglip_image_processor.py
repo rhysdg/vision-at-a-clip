@@ -12,7 +12,7 @@ from torchvision.transforms import Normalize, Compose, RandomResizedCrop, Interp
     CenterCrop, ColorJitter, Grayscale
 
 #from .constants import OPENAI_DATASET_MEAN, OPENAI_DATASET_STD
-#from .utils import to_2tuple
+#from utils import to_2tuple
 
 """
 stripped out from open clip

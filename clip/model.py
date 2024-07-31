@@ -11,12 +11,12 @@ import numpy as np
 import onnxruntime as ort
 from PIL import Image
 
-from clip.utils import ensemble_prompt
+from utils import ensemble_prompt
 from clip import Preprocessor, Tokenizer
 from clip.siglip_tokenizer import SiglipTokenizer
 from clip.siglip_image_processor import image_transform
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 T = TypeVar("T")
 
 def softmax(x: np.ndarray) -> np.ndarray:

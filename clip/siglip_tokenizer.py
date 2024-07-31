@@ -23,13 +23,13 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import sentencepiece as spm
 
-from .utils.tokenization_utils import PreTrainedTokenizer
-from .utils.tokenization_utils_base import AddedToken
-from .utils import sentencepiece_model_pb2_new as sentencepiece_model_pb2
+from utils.tokenization_utils import PreTrainedTokenizer
+from utils.tokenization_utils_base import AddedToken
+from utils import sentencepiece_model_pb2_new as sentencepiece_model_pb2
 
 if TYPE_CHECKING:
-    from ...tokenization_utils_base import TextInput
-from .utils import logging, requires_backends
+    from utils.tokenization_utils_base import TextInput
+from utils import logging, requires_backends
 
 
 logger = logging.get_logger(__name__)
