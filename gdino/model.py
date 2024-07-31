@@ -70,6 +70,8 @@ class OnnxGDINO:
         self.type = type
 
         self._model_urls = {'gdino_fp32.onnx': 'https://drive.google.com/file/d/1bdnUeBnMfIhlvswDDMG1L_gSW4URZWt8/view?usp=sharing',}
+        self._model_urls = {'gdino_fp16.onnx': 'https://drive.google.com/file/d/1bdnUeBnMfIhlvswDDMG1L_gSW4URZWt8/view?usp=sharing',}
+
 
         vocab_dir = f'{os.path.dirname(os.path.abspath(__file__))}/data/vocab.txt'
         model_dir= f'{os.path.dirname(os.path.abspath(__file__))}/data/{type}.onnx'
@@ -88,6 +90,10 @@ class OnnxGDINO:
 
     
     def _load_model(self, path: str):
+
+        sess_options = ort.SessionOptions()
+        sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL
+
 
 
         try:
@@ -111,7 +117,10 @@ class OnnxGDINO:
         
             # `providers` need to be set explicitly since ORT 1.9
             return ort.InferenceSession(
-                path, providers=self.providers
+                path, 
+                sess_options,
+                providers=self.providers,
+                
             )
             
     def preprocess_query(self, 

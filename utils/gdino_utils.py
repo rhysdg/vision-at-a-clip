@@ -1,3 +1,5 @@
+import os
+import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
@@ -67,11 +69,21 @@ def generate_masks_with_special_tokens_and_transfer_map(tokenized, special_token
     return attention_mask, position_ids.to(torch.long), cate_to_token_mask_list
 
 
-def viz(image_pil, tgt):
+def viz(image_pil, 
+        tgt, 
+        label_size=25,
+        bbox_thickness=6
+        ):
+
     H, W = tgt["size"]
     boxes = tgt["boxes"]
     labels = tgt["labels"]
+    
+
+    font_path = os.path.join(cv2.__path__[0],'qt','fonts','DejaVuSans.ttf')
+    font = ImageFont.truetype(font_path, size=label_size)
     assert len(boxes) == len(labels), "boxes and labels must have same length"
+    
 
     draw = ImageDraw.Draw(image_pil)
     mask = Image.new("L", image_pil.size, 0)
@@ -79,7 +91,6 @@ def viz(image_pil, tgt):
 
     # draw boxes and masks
     for box, label in zip(boxes, labels):
-        # from 0..1 to 0..W, 0..H
         box = box * torch.Tensor([W, H, W, H])
         # from xywh to xyxy
         box[:2] -= box[2:] / 2
@@ -90,18 +101,15 @@ def viz(image_pil, tgt):
         x0, y0, x1, y1 = box
         x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
 
-        draw.rectangle([x0, y0, x1, y1], outline=color, width=6)
-        # draw.text((x0, y0), str(label), fill=color)
-
-        font = ImageFont.load_default()
+        draw.rectangle([x0, y0, x1, y1], outline=color, width=bbox_thickness)
         if hasattr(font, "getbbox"):
             bbox = draw.textbbox((x0, y0), str(label), font)
         else:
             w, h = draw.textsize(str(label), font)
             bbox = (x0, y0, w + x0, y0 + h)
-        # bbox = draw.textbbox((x0, y0), str(label))
+   
         draw.rectangle(bbox, fill=color)
-        draw.text((x0, y0), str(label), fill="white")
+        draw.text((x0, y0), f'  {str(label)}', fill="white", font_size=label_size)
 
         mask_draw.rectangle([x0, y0, x1, y1], fill=255, width=6)
 
