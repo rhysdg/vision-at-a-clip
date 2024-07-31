@@ -165,7 +165,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   import torch
   import numpy as np
   from gdino.model import OnnxGDINO
-  from  utils.gdino_utils import load_image, plot_boxes_to_image
+  from  utils.gdino_utils import load_image, viz
 
   logging.basicConfig(level=logging.INFO)
 
@@ -174,7 +174,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   ogd = OnnxGDINO(type='gdino_fp32')
 
   payload = ogd.preprocess_query("spaceman. spacecraft. water. clouds. space helmet")
-  img, img_transformed = load_image('/images/wave_planet.webp')
+  img, img_transformed = load_image('images/wave_planet.webp')
 
   img.save(os.path.join(output_dir, "pred.jpg"))
 
@@ -190,8 +190,8 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
       "labels": predicted_phrases,
   }
 
-  prediction = viz(img, pred_dict)[0]
-  predicitons.save(os.path.join(output_dir, "pred.jpg"))
+  predictions = viz(img, pred_dict)[0]
+  predictions.save(os.path.join(output_dir, "pred.jpg"))
   
   ```
 
