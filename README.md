@@ -56,9 +56,9 @@ You'll find that all models and pipelines are available to you as separate tools
 
 Last of all the aim here is to keep up with the latest optimised foundation models as we go. This includes optimised postprocessing and an test time augmentations that can help with inference quality. Most importantly the aim is to ensure that ONNX and TensorRT representations are available for use. So far we have: 
 
-- Open AI's original [CLIP](https://openai.com/index/clip/) - ViT-B/32 basedconverted to ONNX
+- Open AI's original [CLIP](https://openai.com/index/clip/) - ViT-B/32 based converted to ONNX with full inference class
 - [Siglip](https://arxiv.org/abs/2303.15343) ONNX - FP16 with a quantized variant around the corner, TRT is in our future scope too.
-- CLIP surgery - [paper](https://arxiv.org/abs/2304.05653)
+- [GroundingDINO](https://github.com/IDEA-Research/GroundingDINO) - Swin T based with a bert incased text encoder, converted to ONNX, FP32, mixed precision (dynamic quant shortly), with a full inference API3
 - [Segment Anything](https://github.com/facebookresearch/segment-anything) ONNX - TRT on it's way
 
 
@@ -88,7 +88,9 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 - Not also that an `OnnxSAM` class is also available with the same instantiation and automatic model download - further examples are on their way along with SigLIP integration
 
 
-## Example usage (CLIP/SigLIP) :
+## Example usage:
+
+### CLIP/SigLIP
 
 - For the full 384 SigLIP model go ahead and use the `.inference` method as follows. Noting that CLIP is avaiable via the same method. Either model will switch between softmax and sigmoid accordingly:
 
@@ -151,6 +153,8 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
           print(f"Probability that the image is '{text}': {p:.3f}")
   ```
 
+### Grounding DINO
+
 - For zero-shot object detection go ahead and build from the following example:
 
   ```python
@@ -165,7 +169,7 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
   logging.basicConfig(level=logging.INFO)
 
-  output_dir = '/home/rhys'
+  output_dir = 'output'
 
   ogd = OnnxGDINO()
 
@@ -255,11 +259,9 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 ## Future updates
 - <strike> Example Gradio app </strike> - **done**
 - <strike> Deprecating Huggingface dependency - standalone siglip tokenization for lightweight deployments </strike>  - **done**
-- Grounding Dino ONNX - possibly a better solution than sam here for localisation - prompts arre builtin too
-- CLIP/SigLIP attention transformed to multi point SAM inference - **in progress**
+- <strike> Grounding Dino ONNX - possibly a better solution than sam here for localisation - prompts are built in too </strike>
 - Python packaging - **scheduled**
 - TensorRT - **pending**
-- SlimSAM - *pending**
 - CUDA accelarated SigLIP based vector search with [chromadb](https://www.trychroma.com/) - **pending**
 - [ollama](https://www.ollama.com/) support - **pending**
 
