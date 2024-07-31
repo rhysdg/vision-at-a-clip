@@ -70,8 +70,6 @@ class OnnxGDINO:
         self.type = type
 
         self._model_urls = {'gdino_fp32.onnx': 'https://drive.google.com/file/d/1bdnUeBnMfIhlvswDDMG1L_gSW4URZWt8/view?usp=sharing',}
-        self._model_urls = {'gdino_fp16.onnx': 'https://drive.google.com/file/d/1bdnUeBnMfIhlvswDDMG1L_gSW4URZWt8/view?usp=sharing',}
-
 
         vocab_dir = f'{os.path.dirname(os.path.abspath(__file__))}/data/vocab.txt'
         model_dir= f'{os.path.dirname(os.path.abspath(__file__))}/data/{type}.onnx'
