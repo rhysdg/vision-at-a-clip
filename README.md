@@ -18,6 +18,8 @@
     <br />
     <img src="images/gdino_res.jpg" align="middle" width=800>
     <br />
+    *GroundingDINO ONNX prompted with: "spaceman. spacecraft. water. clouds. space helmet. glove"
+    <br />
     <br />
     <a href="https://github.com/rhysdg/sam-at-a-clip/issues">Report Bug</a>
     .
@@ -173,15 +175,22 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
   ogd = OnnxGDINO(type='gdino_fp32')
 
-  payload = ogd.preprocess_query("spaceman. spacecraft. water. clouds. space helmet")
+  payload = ogd.preprocess_query("spaceman. spacecraft. water. clouds. space helmet. glove")
   img, img_transformed = load_image('images/wave_planet.webp')
 
   img.save(os.path.join(output_dir, "pred.jpg"))
 
+
+  start = time.time()
   filtered_boxes, predicted_phrases = ogd.inference(img_transformed.astype(np.float32), 
                                                     payload,
                                                     text_threshold=0.25, 
                                                     box_threshold=0.35,)
+
+  end = time.time()
+
+  print((end-start)*1000)
+
 
   size = img.size
   pred_dict = {
@@ -190,9 +199,14 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
       "labels": predicted_phrases,
   }
 
-  predictions = viz(img, pred_dict)[0]
+  predictions = viz(img, 
+                    pred_dict,
+                    label_size=25,
+                    bbox_thickness=6
+                    )[0]
+
   predictions.save(os.path.join(output_dir, "pred.jpg"))
-  
+    
   ```
 
 ## Customisation:
