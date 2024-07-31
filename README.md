@@ -178,16 +178,10 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
 
   img.save(os.path.join(output_dir, "pred.jpg"))
 
-
-
   filtered_boxes, predicted_phrases = ogd.inference(img_transformed.astype(np.float32), 
                                                     payload,
                                                     text_threshold=0.25, 
                                                     box_threshold=0.35,)
-
-
-
-
 
   size = img.size
   pred_dict = {
