@@ -172,8 +172,10 @@ Last of all the aim here is to keep up with the latest optimised foundation mode
   logging.basicConfig(level=logging.INFO)
 
   output_dir = 'output'
-
-  ogd = OnnxGDINO(type='gdino_fp32')
+  
+  #modest speedup with TensorRT 10.0.1.6-1 and fp16, amplitude hw currently
+  #torch with amp autocast and matmul enhancements at 'high' is still faster currently 
+  ogd = OnnxGDINO(type='gdino_fp32', trt=True)
 
   payload = ogd.preprocess_query("spaceman. spacecraft. water. clouds. space helmet. glove")
   img, img_transformed = load_image('images/wave_planet.webp')
