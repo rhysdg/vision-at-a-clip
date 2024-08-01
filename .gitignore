@@ -146,3 +146,6 @@ decrypt.py
 
 **/*.pth
 **/*.onnx
+**/*.engine
+**/*profile
+
