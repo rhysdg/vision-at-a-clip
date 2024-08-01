@@ -1,8 +1,10 @@
+import time
 import scipy
 import errno
 import os
 import gdown
 import logging
+import warnings
 from pathlib import Path
 from typing import (List, 
                     Tuple, 
@@ -20,14 +22,17 @@ from numpy import linalg as LA
 
 import torch 
 import onnxruntime as ort
+from onnxruntime_extensions import get_library_path as _lib_path
 from utils.gdino_utils import (generate_masks_with_special_tokens_and_transfer_map, 
                                create_positive_map_from_span
                                )
 from gdino.gdino_tokenizer import BertTokenizer
 
-
-logging.basicConfig(level=logging.INFO)
+    
 T = TypeVar("T")
+logging.basicConfig(level=logging.INFO)
+ort.set_default_logger_severity(3)
+
 
 class OnnxGDINO:
     """
@@ -40,8 +45,10 @@ class OnnxGDINO:
         batch_size: Optional[int] = None, 
         type='gdino_fp32',
         device='cuda',
-        trt=False
-    ):
+        trt=False,
+        warmup=False,
+        n_iters=10
+        ):
         """
       
         """ 
@@ -55,13 +62,23 @@ class OnnxGDINO:
             self.providers.insert(0, 'CUDAExecutionProvider')
 
         if trt:
-            self.providers.insert(0, 'TensorrtExecutionProvider')
+            self.providers.insert(0, ('TensorrtExecutionProvider', {'trt_engine_cache_enable': True, 
+                                                                    'trt_max_workspace_size': 4294967296,
+                                                                    'trt_engine_cache_path': f'{os.path.dirname(os.path.abspath(__file__))}/data', 
+                                                                    'trt_engine_hw_compatible': True,
+                                                                    'trt_sparsity_enable': True, 
+                                                                    'trt_build_heuristics_enable': True,
+                                                                    'trt_builder_optimization_level': 0,
+                                                                    'trt_fp16_enable': True
+                                                                    }
+                        )
+            )
      
 
         if self.providers:
             logging.info(
-                "Available providers for ONNXRuntime: %s", ", ".join(self.providers)
-            )
+                "Available providers for ONNXRuntime: ")
+            
  
 
         self.embedding_size = 512
@@ -77,8 +94,9 @@ class OnnxGDINO:
 
         self.tokenizer = BertTokenizer(vocab_file=vocab_dir)
         self.model = self._load_model(model_dir)
-        
 
+        if warmup:
+            self.warmup(n_iters=n_iters)
 
         self._batch_size = batch_size
 
@@ -90,7 +108,9 @@ class OnnxGDINO:
     def _load_model(self, path: str):
 
         sess_options = ort.SessionOptions()
-        sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL
+        sess_options.log_severity_level = 3
+        sess_options.graph_optimization_level =  ort.GraphOptimizationLevel.ORT_DISABLE_ALL
+        sess_options.register_custom_ops_library(_lib_path())
 
 
 
@@ -98,7 +118,10 @@ class OnnxGDINO:
             if os.path.exists(path):
                 # `providers` need to be set explicitly since ORT 1.9
                 return ort.InferenceSession(
-                    path, providers=self.providers
+                    path, 
+                    sess_options,
+                    providers=self.providers,
+                
                 )
             else:
                 raise FileNotFoundError(
@@ -120,7 +143,27 @@ class OnnxGDINO:
                 providers=self.providers,
                 
             )
-            
+      
+        
+    def warmup(self, n_iters=10):
+
+        payload = self.preprocess_query('time. to. warmup')
+
+        dummy = np.random.randn(1, 3, 800, 1200).astype(np.float32)
+
+        for i in range(n_iters):
+
+            _ , _ = self.model.run(None, {'img': dummy,
+                                        'input_ids': np.array(payload['input_ids']),
+                                        'attention_mask': np.array(payload['attention_mask']).astype(bool),
+                                        'position_ids': payload['position_ids'].detach().numpy(),
+                                        'token_type_ids': np.array(payload['token_type_ids']),
+                                        'text_token_mask': payload['text_token_mask'].detach().numpy()
+                                    }
+                                )
+        
+   
+        
     def preprocess_query(self, 
                          query, 
                          max_text_len=256
@@ -207,7 +250,7 @@ class OnnxGDINO:
         assert text_threshold is not None or token_spans is not None, "text_threshold and token_spans should not be None at the same time!"
         
         image = np.expand_dims(image, 0)
-       
+
         logits, boxes = self.model.run(None, {'img': image,
                                     'input_ids': np.array(payload['input_ids']),
                                     'attention_mask': np.array(payload['attention_mask']).astype(bool),
