@@ -86,7 +86,7 @@ class OnnxGDINO:
         assert type.split('_')[0] in ['gdino'], 'please choose either: gdino, (quant shortly)'
         self.type = type
 
-        self._model_urls = {'gdino_fp32.onnx': 'https://drive.google.com/file/d/1bdnUeBnMfIhlvswDDMG1L_gSW4URZWt8/view?usp=sharing',}
+        self._model_urls = {'gdino_fp32.onnx': 'https://drive.google.com/file/d/1EeGRtfnOCsxe5DONjJ8lfBz3Z5UufoAD/view?usp=sharing',}
 
         vocab_dir = f'{os.path.dirname(os.path.abspath(__file__))}/data/vocab.txt'
         model_dir= f'{os.path.dirname(os.path.abspath(__file__))}/data/{type}.onnx'
